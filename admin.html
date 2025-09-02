@@ -3,1046 +3,1275 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SmartPolice - 警備契約管理システム</title>
+    <title>SmartPolice 管理システム</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .notification-badge { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        .sidebar-transition { transition: margin-left 0.3s ease-in-out; }
+        .modal { display: none; }
+        .modal.show { display: flex; }
+        .toast { display: none; }
+        .toast.show { display: block; }
+        .kanban-card {
+            transition: transform 0.2s ease-in-out;
+            cursor: grab;
+        }
+        .kanban-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .kanban-column {
+            min-height: 400px;
+            background: #f8fafc;
+        }
+        .search-highlight {
+            background-color: #fef3c7;
+            padding: 0 2px;
+        }
+        @media (max-width: 768px) {
+            .sidebar { transform: translateX(-100%); }
+            .sidebar.mobile-open { transform: translateX(0); }
+        }
     </style>
 </head>
-<body class="bg-gray-50" x-data="smartPoliceSystem()">
-    <!-- ログイン画面 -->
-    <div x-show="!isLoggedIn" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 to-blue-700">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md">
-            <div class="text-center mb-8">
-                <i class="fas fa-shield-alt text-4xl text-blue-600 mb-4"></i>
-                <h1 class="text-3xl font-bold text-gray-800 mb-2">SmartPolice</h1>
-                <p class="text-gray-600">警備契約管理システム</p>
-            </div>
-            
-            <form @submit.prevent="login">
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">
-                        <i class="fas fa-user mr-2"></i>ユーザーID
-                    </label>
-                    <input type="text" x-model="credentials.username" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           placeholder="ユーザーIDを入力" required>
+<body class="bg-gray-50 font-sans">
+    <!-- Toast通知システム -->
+    <div id="toast" class="toast fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+        <span id="toast-message"></span>
+    </div>
+
+    <!-- 固定サイドバー -->
+    <div id="sidebar" class="sidebar fixed left-0 top-0 w-64 h-full bg-blue-900 text-white z-40 overflow-y-auto">
+        <!-- ヘッダー -->
+        <div class="p-6 border-b border-blue-800">
+            <h1 class="text-xl font-bold">SmartPolice</h1>
+            <p class="text-blue-300 text-sm">管理システム</p>
+        </div>
+
+        <!-- ユーザー情報 -->
+        <div class="p-4 border-b border-blue-800">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-blue-700 rounded-full flex items-center justify-center">
+                    <i class="fas fa-user text-sm"></i>
                 </div>
-                <div class="mb-6">
-                    <label class="block text-gray-700 text-sm font-bold mb-2">
-                        <i class="fas fa-lock mr-2"></i>パスワード
-                    </label>
-                    <input type="password" x-model="credentials.password" 
-                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           placeholder="パスワードを入力" required>
-                </div>
-                <button type="submit" 
-                        class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
-                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                </button>
-            </form>
-            
-            <div class="mt-6 text-sm text-gray-600">
-                <p class="font-medium mb-2">テスト用アカウント:</p>
-                <div class="space-y-1 text-xs">
-                    <p><span class="font-medium">管理者:</span> admin / admin123</p>
-                    <p><span class="font-medium">担当者:</span> officer / officer123</p>
-                    <p><span class="font-medium">顧客:</span> client / client123</p>
+                <div>
+                    <p class="font-medium" id="user-name">管理者 太郎</p>
+                    <p class="text-blue-300 text-xs" id="user-role">SUPER_ADMIN</p>
                 </div>
             </div>
         </div>
+
+        <!-- ナビゲーション -->
+        <nav class="mt-4">
+            <!-- ダッシュボード -->
+            <a href="#" onclick="showSection('dashboard')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-tachometer-alt w-5"></i>
+                <span class="ml-3">ダッシュボード</span>
+            </a>
+
+            <!-- 顧客管理 -->
+            <a href="#" onclick="showSection('customers')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-users w-5"></i>
+                <span class="ml-3">顧客管理</span>
+            </a>
+
+            <!-- 相談・メッセージ管理 -->
+            <a href="#" onclick="showSection('consultations')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-comments w-5"></i>
+                <span class="ml-3">相談管理</span>
+                <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full" id="unread-consultations">3</span>
+            </a>
+
+            <!-- サービス申込み管理 -->
+            <a href="#" onclick="showSection('services')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-clipboard-list w-5"></i>
+                <span class="ml-3">サービス管理</span>
+            </a>
+
+            <!-- 契約管理 -->
+            <a href="#" onclick="showSection('contracts')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-file-contract w-5"></i>
+                <span class="ml-3">契約管理</span>
+            </a>
+
+            <!-- お知らせ管理 -->
+            <a href="#" onclick="showSection('notices')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-bullhorn w-5"></i>
+                <span class="ml-3">お知らせ</span>
+            </a>
+
+            <!-- イベント管理 -->
+            <a href="#" onclick="showSection('events')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-calendar w-5"></i>
+                <span class="ml-3">イベント</span>
+            </a>
+
+            <!-- 資料・文書管理 -->
+            <a href="#" onclick="showSection('documents')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-folder w-5"></i>
+                <span class="ml-3">文書管理</span>
+            </a>
+
+            <!-- 請求・支払管理 -->
+            <a href="#" onclick="showSection('billing')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-credit-card w-5"></i>
+                <span class="ml-3">請求管理</span>
+            </a>
+
+            <!-- スタッフ管理 -->
+            <a href="#" onclick="showSection('staff')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors role-admin">
+                <i class="fas fa-user-tie w-5"></i>
+                <span class="ml-3">スタッフ管理</span>
+            </a>
+
+            <!-- 監査ログ -->
+            <a href="#" onclick="showSection('audit')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors role-superadmin">
+                <i class="fas fa-history w-5"></i>
+                <span class="ml-3">監査ログ</span>
+            </a>
+
+            <!-- 設定 -->
+            <a href="#" onclick="showSection('settings')" 
+               class="nav-item flex items-center px-6 py-3 text-blue-100 hover:bg-blue-800 hover:text-white transition-colors">
+                <i class="fas fa-cog w-5"></i>
+                <span class="ml-3">設定</span>
+            </a>
+        </nav>
+
+        <!-- ログアウト -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-blue-800">
+            <button onclick="logout()" class="w-full flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors">
+                <i class="fas fa-sign-out-alt mr-2"></i>
+                ログアウト
+            </button>
+        </div>
     </div>
 
-    <!-- メインシステム -->
-    <div x-show="isLoggedIn" class="min-h-screen bg-gray-50">
-        <!-- ヘッダー -->
-        <header class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between items-center py-4">
-                    <div class="flex items-center">
-                        <i class="fas fa-shield-alt text-2xl text-blue-600 mr-3"></i>
-                        <h1 class="text-2xl font-bold text-gray-800">SmartPolice</h1>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <!-- 通知ベル -->
-                        <div class="relative" x-data="{ showNotifications: false }">
-                            <button @click="showNotifications = !showNotifications" 
-                                    class="relative p-2 text-gray-500 hover:text-gray-700 transition-colors">
-                                <i class="fas fa-bell text-xl"></i>
-                                <span x-show="notifications.filter(n => !n.read).length > 0" 
-                                      class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center notification-badge"
-                                      x-text="notifications.filter(n => !n.read).length"></span>
-                            </button>
-                            
-                            <!-- 通知ドロップダウン -->
-                            <div x-show="showNotifications" @click.away="showNotifications = false"
-                                 class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border z-50 fade-in">
-                                <div class="p-4 border-b">
-                                    <div class="flex justify-between items-center">
-                                        <h3 class="font-medium text-gray-800">通知</h3>
-                                        <button @click="markAllAsRead()" class="text-sm text-blue-600 hover:text-blue-800">
-                                            すべて既読にする
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="max-h-64 overflow-y-auto">
-                                    <template x-for="notification in notifications.slice(0, 5)" :key="notification.id">
-                                        <div @click="markAsRead(notification.id)" 
-                                             class="p-3 border-b hover:bg-gray-50 cursor-pointer"
-                                             :class="{ 'bg-blue-50': !notification.read }">
-                                            <div class="flex items-start">
-                                                <i :class="notification.icon" class="mt-1 mr-2 text-sm"></i>
-                                                <div class="flex-1">
-                                                    <p class="text-sm font-medium text-gray-800" x-text="notification.title"></p>
-                                                    <p class="text-xs text-gray-600 mt-1" x-text="notification.message"></p>
-                                                    <p class="text-xs text-gray-400 mt-1" x-text="notification.time"></p>
-                                                </div>
-                                                <div x-show="!notification.read" class="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center space-x-2">
-                            <span class="text-sm text-gray-600" x-text="`${currentUser.name} (${currentUser.role})`"></span>
-                            <button @click="logout" class="text-sm text-red-600 hover:text-red-800">
-                                <i class="fas fa-sign-out-alt mr-1"></i>ログアウト
-                            </button>
-                        </div>
+    <!-- メインコンテンツエリア -->
+    <div class="sidebar-transition ml-64">
+        <!-- トップバー -->
+        <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <button id="sidebar-toggle" class="md:hidden mr-4 text-gray-600">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <h2 id="page-title" class="text-2xl font-semibold text-gray-800">ダッシュボード</h2>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- 通知 -->
+                    <button class="relative text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+                    </button>
+                    <!-- クイック検索 -->
+                    <div class="relative">
+                        <input type="text" placeholder="検索..." 
+                               class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                     </div>
                 </div>
             </div>
         </header>
 
-        <div class="flex">
-            <!-- サイドバー -->
-            <aside class="w-64 bg-white shadow-sm min-h-screen">
-                <nav class="mt-5 px-2">
-                    <template x-for="item in menuItems" :key="item.id">
-                        <div x-show="hasPermission(item.permission)">
-                            <button @click="currentView = item.id" 
-                                    class="group flex items-center px-2 py-2 text-base font-medium rounded-md w-full text-left mb-1 transition-colors"
-                                    :class="currentView === item.id ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-50'">
-                                <i :class="item.icon" class="mr-3 flex-shrink-0 h-6 w-6"></i>
-                                <span x-text="item.name"></span>
-                            </button>
-                        </div>
-                    </template>
-                </nav>
-            </aside>
-
-            <!-- メインコンテンツ -->
-            <main class="flex-1 p-6">
-                <!-- ダッシュボード -->
-                <div x-show="currentView === 'dashboard'" class="fade-in">
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">ダッシュボード</h2>
-                        <p class="text-gray-600">システム概要と最新情報</p>
-                    </div>
-
-                    <!-- KPI カード -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <i class="fas fa-users text-3xl text-blue-500"></i>
-                                </div>
-                                <div class="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt class="text-sm font-medium text-gray-500 truncate">総契約者数</dt>
-                                        <dd class="text-2xl font-bold text-gray-900" x-text="clients.length"></dd>
-                                    </dl>
-                                </div>
+        <!-- メインコンテンツ -->
+        <main class="p-6">
+            <!-- ダッシュボードセクション -->
+            <div id="dashboard-section" class="section">
+                <!-- KPIカード -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm">総顧客数</p>
+                                <p class="text-3xl font-bold text-blue-600">1,247</p>
+                                <p class="text-green-500 text-sm mt-1">
+                                    <i class="fas fa-arrow-up"></i> +12% 先月比
+                                </p>
                             </div>
-                        </div>
-                        
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <i class="fas fa-shield-alt text-3xl text-green-500"></i>
-                                </div>
-                                <div class="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt class="text-sm font-medium text-gray-500 truncate">有効契約</dt>
-                                        <dd class="text-2xl font-bold text-gray-900" x-text="clients.filter(c => c.status === '有効').length"></dd>
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <i class="fas fa-yen-sign text-3xl text-yellow-500"></i>
-                                </div>
-                                <div class="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt class="text-sm font-medium text-gray-500 truncate">月額売上</dt>
-                                        <dd class="text-2xl font-bold text-gray-900">¥2,850,000</dd>
-                                    </dl>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <i class="fas fa-exclamation-triangle text-3xl text-red-500"></i>
-                                </div>
-                                <div class="ml-5 w-0 flex-1">
-                                    <dl>
-                                        <dt class="text-sm font-medium text-gray-500 truncate">要注意案件</dt>
-                                        <dd class="text-2xl font-bold text-gray-900">3</dd>
-                                    </dl>
-                                </div>
+                            <div class="bg-blue-100 p-3 rounded-full">
+                                <i class="fas fa-users text-blue-600 text-xl"></i>
                             </div>
                         </div>
                     </div>
 
-                    <!-- チャートエリア -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                        <!-- 月別売上推移 -->
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">月別売上推移</h3>
-                            <canvas id="revenueChart" width="400" height="300"></canvas>
-                        </div>
-
-                        <!-- プラン別契約分布 -->
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">プラン別契約分布</h3>
-                            <canvas id="planChart" width="400" height="300"></canvas>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm">月間売上</p>
+                                <p class="text-3xl font-bold text-green-600">¥8,450,000</p>
+                                <p class="text-green-500 text-sm mt-1">
+                                    <i class="fas fa-arrow-up"></i> +8% 先月比
+                                </p>
+                            </div>
+                            <div class="bg-green-100 p-3 rounded-full">
+                                <i class="fas fa-yen-sign text-green-600 text-xl"></i>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- 地域・業界分析 -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <!-- 地域別契約者分布 -->
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">地域別契約者分布</h3>
-                            <div class="space-y-3">
-                                <template x-for="(count, region) in regionStats" :key="region">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-gray-700" x-text="region"></span>
-                                        <div class="flex items-center">
-                                            <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
-                                                <div class="bg-blue-500 h-2 rounded-full" :style="`width: ${(count / Math.max(...Object.values(regionStats))) * 100}%`"></div>
-                                            </div>
-                                            <span class="text-sm text-gray-600" x-text="count + '件'"></span>
-                                        </div>
-                                    </div>
-                                </template>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm">未対応相談</p>
+                                <p class="text-3xl font-bold text-red-600">23</p>
+                                <p class="text-red-500 text-sm mt-1">
+                                    <i class="fas fa-exclamation-triangle"></i> 要対応
+                                </p>
+                            </div>
+                            <div class="bg-red-100 p-3 rounded-full">
+                                <i class="fas fa-comments text-red-600 text-xl"></i>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- 業界別契約分布 -->
-                        <div class="bg-white rounded-lg shadow p-6">
-                            <h3 class="text-lg font-semibold text-gray-800 mb-4">業界別契約分布</h3>
-                            <div class="space-y-3">
-                                <template x-for="(count, industry) in industryStats" :key="industry">
-                                    <div class="flex justify-between items-center">
-                                        <span class="text-sm font-medium text-gray-700" x-text="industry"></span>
-                                        <div class="flex items-center">
-                                            <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
-                                                <div class="bg-green-500 h-2 rounded-full" :style="`width: ${(count / Math.max(...Object.values(industryStats))) * 100}%`"></div>
-                                            </div>
-                                            <span class="text-sm text-gray-600" x-text="count + '件'"></span>
-                                        </div>
-                                    </div>
-                                </template>
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-gray-600 text-sm">アクティブ契約</p>
+                                <p class="text-3xl font-bold text-purple-600">892</p>
+                                <p class="text-green-500 text-sm mt-1">
+                                    <i class="fas fa-arrow-up"></i> +5% 先月比
+                                </p>
+                            </div>
+                            <div class="bg-purple-100 p-3 rounded-full">
+                                <i class="fas fa-file-contract text-purple-600 text-xl"></i>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 契約者管理 -->
-                <div x-show="currentView === 'clients'" class="fade-in">
-                    <div class="mb-6 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 mb-2">契約者管理</h2>
-                            <p class="text-gray-600">契約者情報の登録・編集・管理</p>
-                        </div>
-                        <div class="space-x-2">
-                            <button @click="exportCSV('clients')" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-200">
-                                <i class="fas fa-download mr-2"></i>CSVエクスポート
-                            </button>
-                            <button @click="showImportModal = true" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
-                                <i class="fas fa-upload mr-2"></i>CSVインポート
-                            </button>
-                            <button @click="openClientForm()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
-                                <i class="fas fa-plus mr-2"></i>新規登録
-                            </button>
-                        </div>
+                <!-- チャートエリア -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <!-- 売上推移グラフ -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">月間売上推移</h3>
+                        <canvas id="revenueChart" width="400" height="200"></canvas>
                     </div>
 
-                    <!-- 検索・フィルター -->
-                    <div class="bg-white rounded-lg shadow mb-6 p-4">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <input type="text" x-model="searchQuery" placeholder="契約者名・会社名で検索" 
-                                   class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <select x-model="filterStatus" class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">全ステータス</option>
-                                <option value="有効">有効</option>
-                                <option value="保留">保留</option>
-                                <option value="無効">無効</option>
-                            </select>
-                            <select x-model="filterPlan" class="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">全プラン</option>
-                                <option value="ベーシック">ベーシック</option>
-                                <option value="スタンダード">スタンダード</option>
-                                <option value="プレミアム">プレミアム</option>
-                            </select>
-                            <button @click="clearFilters()" class="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-200">
-                                <i class="fas fa-times mr-2"></i>クリア
-                            </button>
-                        </div>
+                    <!-- 顧客ステータス分布 -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">顧客ステータス分布</h3>
+                        <canvas id="customerStatusChart" width="400" height="200"></canvas>
                     </div>
+                </div>
 
-                    <!-- データテーブル -->
-                    <div class="bg-white rounded-lg shadow overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">契約者情報</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">連絡先</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">プラン</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    <template x-for="client in paginatedClients" :key="client.id">
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm font-medium text-gray-900" x-text="client.name"></div>
-                                                <div class="text-sm text-gray-500" x-text="client.company"></div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm text-gray-900" x-text="client.phone"></div>
-                                                <div class="text-sm text-gray-500" x-text="client.email"></div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <div class="text-sm text-gray-900" x-text="client.plan"></div>
-                                                <div class="text-sm text-gray-500" x-text="'¥' + client.monthlyFee?.toLocaleString()"></div>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                                      :class="{
-                                                          'bg-green-100 text-green-800': client.status === '有効',
-                                                          'bg-yellow-100 text-yellow-800': client.status === '保留',
-                                                          'bg-red-100 text-red-800': client.status === '無効'
-                                                      }"
-                                                      x-text="client.status">
-                                                </span>
-                                            </td>
-                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                                <button @click="openClientForm(client)" class="text-blue-600 hover:text-blue-900">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                                <button @click="deleteClient(client.id)" class="text-red-600 hover:text-red-900">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                                <button @click="printClient(client)" class="text-green-600 hover:text-green-900">
-                                                    <i class="fas fa-print"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                <!-- 最近のアクティビティ -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">最近のアクティビティ</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            <div class="bg-blue-500 text-white p-2 rounded-full">
+                                <i class="fas fa-user-plus text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-gray-800 font-medium">新規顧客登録</p>
+                                <p class="text-gray-600 text-sm">株式会社サンプル企業が登録されました</p>
+                                <p class="text-gray-400 text-xs">5分前</p>
+                            </div>
                         </div>
-                        
-                        <!-- ページネーション -->
-                        <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-                            <div class="flex items-center justify-between">
-                                <div class="text-sm text-gray-700">
-                                    <span x-text="`${(currentPage - 1) * itemsPerPage + 1} - ${Math.min(currentPage * itemsPerPage, filteredClients.length)} 件 (全 ${filteredClients.length} 件)`"></span>
-                                </div>
-                                <div class="flex space-x-2">
-                                    <button @click="currentPage > 1 && currentPage--" :disabled="currentPage <= 1"
-                                            class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50">
-                                        前へ
-                                    </button>
-                                    <button @click="currentPage < totalPages && currentPage++" :disabled="currentPage >= totalPages"
-                                            class="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50">
-                                        次へ
-                                    </button>
-                                </div>
+
+                        <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            <div class="bg-green-500 text-white p-2 rounded-full">
+                                <i class="fas fa-check text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-gray-800 font-medium">契約締結完了</p>
+                                <p class="text-gray-600 text-sm">ABC商事との年間契約が締結されました</p>
+                                <p class="text-gray-400 text-xs">15分前</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            <div class="bg-yellow-500 text-white p-2 rounded-full">
+                                <i class="fas fa-exclamation text-sm"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-gray-800 font-medium">緊急相談受信</p>
+                                <p class="text-gray-600 text-sm">XYZ株式会社から緊急相談が入りました</p>
+                                <p class="text-gray-400 text-xs">1時間前</p>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- ユーザー管理 -->
-                <div x-show="currentView === 'users'" class="fade-in">
-                    <div class="mb-6 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-2xl font-bold text-gray-800 mb-2">ユーザー管理</h2>
-                            <p class="text-gray-600">システムユーザーの管理・権限設定</p>
-                        </div>
-                        <button @click="openUserForm()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
-                            <i class="fas fa-user-plus mr-2"></i>新規ユーザー追加
+            <!-- 顧客管理セクション -->
+            <div id="customers-section" class="section hidden">
+                <!-- 顧客管理ヘッダー -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 md:mb-0">顧客管理</h3>
+                    <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                        <button onclick="showAddCustomerModal()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus mr-2"></i>新規顧客追加
+                        </button>
+                        <button onclick="exportCustomers()" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>エクスポート
                         </button>
                     </div>
+                </div>
 
-                    <div class="bg-white rounded-lg shadow overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                <!-- 検索・フィルターエリア -->
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">検索</label>
+                            <input type="text" id="customer-search" placeholder="会社名、担当者名で検索" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">契約ステータス</label>
+                            <select id="status-filter" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">すべて</option>
+                                <option value="active">アクティブ</option>
+                                <option value="inactive">非アクティブ</option>
+                                <option value="trial">試用期間</option>
+                                <option value="expired">期限切れ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">契約プラン</label>
+                            <select id="plan-filter" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">すべて</option>
+                                <option value="basic">ベーシック</option>
+                                <option value="standard">スタンダード</option>
+                                <option value="premium">プレミアム</option>
+                                <option value="enterprise">エンタープライズ</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">地域</label>
+                            <select id="region-filter" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">すべて</option>
+                                <option value="tokyo">東京都</option>
+                                <option value="osaka">大阪府</option>
+                                <option value="nagoya">愛知県</option>
+                                <option value="fukuoka">福岡県</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mt-4 flex space-x-2">
+                        <button onclick="applyFilters()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-search mr-2"></i>検索実行
+                        </button>
+                        <button onclick="clearFilters()" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-times mr-2"></i>クリア
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 顧客一覧テーブル -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50 border-b border-gray-200">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ユーザー</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">権限</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最終ログイン</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <input type="checkbox" id="select-all-customers" class="rounded">
+                                    </th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">会社名</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">担当者</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">契約プラン</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ステータス</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">最終ログイン</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
                                 </tr>
                             </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <template x-for="user in users" :key="user.id">
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center">
-                                                <i class="fas fa-user-circle text-2xl text-gray-400 mr-3"></i>
-                                                <div>
-                                                    <div class="text-sm font-medium text-gray-900" x-text="user.name"></div>
-                                                    <div class="text-sm text-gray-500" x-text="user.username"></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="user.role"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="user.lastLogin"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                                  :class="user.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                                                  x-text="user.active ? '有効' : '無効'">
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                            <button @click="openUserForm(user)" class="text-blue-600 hover:text-blue-900">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button @click="toggleUserStatus(user.id)" 
-                                                    :class="user.active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'">
-                                                <i :class="user.active ? 'fas fa-user-slash' : 'fas fa-user-check'"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
-                                </template>
+                            <tbody id="customers-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- 顧客データはJavaScriptで動的に生成 -->
                             </tbody>
                         </table>
                     </div>
-                </div>
-
-                <!-- 監査ログ -->
-                <div x-show="currentView === 'audit'" class="fade-in">
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800 mb-2">監査ログ</h2>
-                        <p class="text-gray-600">システムの操作履歴とセキュリティログ</p>
-                    </div>
-
-                    <div class="bg-white rounded-lg shadow overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日時</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ユーザー</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">対象</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">結果</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                <template x-for="log in auditLogs" :key="log.id">
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="log.timestamp"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="log.user"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="log.action"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" x-text="log.target"></td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                                  :class="log.result === '成功' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                                                  x-text="log.result">
-                                            </span>
-                                        </td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- その他のビュー（レポート、設定等）のプレースホルダー -->
-                <div x-show="currentView === 'reports'" class="fade-in">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">レポート管理</h2>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <p class="text-gray-600 mb-4">各種レポートの生成・管理機能</p>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <button class="bg-blue-600 text-white p-4 rounded-lg hover:bg-blue-700 transition duration-200">
-                                <i class="fas fa-chart-bar text-2xl mb-2"></i>
-                                <div class="font-medium">月次売上レポート</div>
+                    <!-- ページネーション -->
+                    <div class="bg-white px-6 py-3 border-t border-gray-200 flex items-center justify-between">
+                        <div class="flex-1 flex justify-between sm:hidden">
+                            <button class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                前へ
                             </button>
-                            <button class="bg-green-600 text-white p-4 rounded-lg hover:bg-green-700 transition duration-200">
-                                <i class="fas fa-users text-2xl mb-2"></i>
-                                <div class="font-medium">契約者リスト</div>
-                            </button>
-                            <button class="bg-purple-600 text-white p-4 rounded-lg hover:bg-purple-700 transition duration-200">
-                                <i class="fas fa-file-alt text-2xl mb-2"></i>
-                                <div class="font-medium">監査レポート</div>
+                            <button class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                次へ
                             </button>
                         </div>
-                    </div>
-                </div>
-
-                <div x-show="currentView === 'settings'" class="fade-in">
-                    <h2 class="text-2xl font-bold text-gray-800 mb-4">システム設定</h2>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <p class="text-gray-600">システム全体の設定管理</p>
-                        <div class="mt-6 space-y-4">
-                            <div class="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                    <h3 class="font-medium">メール通知</h3>
-                                    <p class="text-sm text-gray-600">新規契約時の自動メール送信</p>
-                                </div>
-                                <input type="checkbox" checked class="form-checkbox h-5 w-5 text-blue-600">
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700">
+                                    表示中: <span class="font-medium">1</span> - <span class="font-medium">10</span> / <span class="font-medium">247</span> 件
+                                </p>
                             </div>
-                            <div class="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                    <h3 class="font-medium">自動バックアップ</h3>
-                                    <p class="text-sm text-gray-600">毎日午前2時にデータバックアップ</p>
-                                </div>
-                                <input type="checkbox" checked class="form-checkbox h-5 w-5 text-blue-600">
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                                    <button class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </button>
+                                    <button class="bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium">1</button>
+                                    <button class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">2</button>
+                                    <button class="bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium">3</button>
+                                    <button class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </button>
+                                </nav>
                             </div>
                         </div>
                     </div>
                 </div>
-            </main>
-        </div>
+            </div>
 
-        <!-- 契約者フォームモーダル -->
-        <div x-show="showClientForm" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" x-transition>
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4 max-h-screen overflow-y-auto">
-                <div class="px-6 py-4 border-b">
-                    <h3 class="text-lg font-semibold" x-text="editingClient ? '契約者情報編集' : '新規契約者登録'"></h3>
+            <!-- 相談管理セクション -->
+            <div id="consultations-section" class="section hidden">
+                <!-- 相談管理ヘッダー -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 md:mb-0">相談・メッセージ管理</h3>
+                    <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                        <button onclick="markAllAsRead()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-check mr-2"></i>全て既読にする
+                        </button>
+                        <button onclick="exportConsultations()" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>エクスポート
+                        </button>
+                    </div>
                 </div>
-                <form @submit.prevent="saveClient" class="p-6 space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">契約者名 *</label>
-                            <input type="text" x-model="clientForm.name" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+                <!-- ステータス別タブ -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+                    <div class="border-b border-gray-200">
+                        <nav class="-mb-px flex space-x-8 px-6">
+                            <button onclick="showConsultationTab('all')" 
+                                    class="consultation-tab active whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                すべて <span class="ml-2 bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs">247</span>
+                            </button>
+                            <button onclick="showConsultationTab('unread')" 
+                                    class="consultation-tab text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-1 border-b-2 border-transparent hover:border-gray-300 font-medium text-sm">
+                                未読 <span class="ml-2 bg-red-100 text-red-600 py-1 px-2 rounded-full text-xs">23</span>
+                            </button>
+                            <button onclick="showConsultationTab('urgent')" 
+                                    class="consultation-tab text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-1 border-b-2 border-transparent hover:border-gray-300 font-medium text-sm">
+                                緊急 <span class="ml-2 bg-red-100 text-red-600 py-1 px-2 rounded-full text-xs">5</span>
+                            </button>
+                            <button onclick="showConsultationTab('in_progress')" 
+                                    class="consultation-tab text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-1 border-b-2 border-transparent hover:border-gray-300 font-medium text-sm">
+                                対応中 <span class="ml-2 bg-yellow-100 text-yellow-600 py-1 px-2 rounded-full text-xs">18</span>
+                            </button>
+                            <button onclick="showConsultationTab('resolved')" 
+                                    class="consultation-tab text-gray-500 hover:text-gray-700 whitespace-nowrap py-4 px-1 border-b-2 border-transparent hover:border-gray-300 font-medium text-sm">
+                                解決済み <span class="ml-2 bg-green-100 text-green-600 py-1 px-2 rounded-full text-xs">201</span>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+
+                <!-- 相談一覧 -->
+                <div class="space-y-4" id="consultations-list">
+                    <!-- 相談アイテムはJavaScriptで動的生成 -->
+                </div>
+            </div>
+
+            <!-- サービス管理セクション -->
+            <div id="services-section" class="section hidden">
+                <!-- サービス管理ヘッダー -->
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-4 md:mb-0">サービス申込み管理</h3>
+                    <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-4">
+                        <select class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option>全てのサービス</option>
+                            <option>危機管理コンサル</option>
+                            <option>セキュリティ監査</option>
+                            <option>研修・教育</option>
+                            <option>システム構築</option>
+                        </select>
+                        <button onclick="exportServices()" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download mr-2"></i>エクスポート
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Kanbanボード -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <!-- 申込み受付 -->
+                    <div class="kanban-column bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
+                            申込み受付 <span class="ml-auto bg-blue-100 text-blue-800 text-sm px-2 py-1 rounded">8</span>
+                        </h4>
+                        <div class="space-y-3" id="submitted-services">
+                            <!-- カードはJavaScriptで動的生成 -->
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">会社名</label>
-                            <input type="text" x-model="clientForm.company"
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- 見積作成中 -->
+                    <div class="kanban-column bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
+                            見積作成中 <span class="ml-auto bg-yellow-100 text-yellow-800 text-sm px-2 py-1 rounded">5</span>
+                        </h4>
+                        <div class="space-y-3" id="quoting-services">
+                            <!-- カードはJavaScriptで動的生成 -->
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">電話番号 *</label>
-                            <input type="tel" x-model="clientForm.phone" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- 実行中 -->
+                    <div class="kanban-column bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="w-3 h-3 bg-orange-500 rounded-full mr-2"></span>
+                            実行中 <span class="ml-auto bg-orange-100 text-orange-800 text-sm px-2 py-1 rounded">12</span>
+                        </h4>
+                        <div class="space-y-3" id="in-progress-services">
+                            <!-- カードはJavaScriptで動的生成 -->
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">メールアドレス *</label>
-                            <input type="email" x-model="clientForm.email" required
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <!-- 完了 -->
+                    <div class="kanban-column bg-gray-50 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+                            <span class="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
+                            完了 <span class="ml-auto bg-green-100 text-green-800 text-sm px-2 py-1 rounded">28</span>
+                        </h4>
+                        <div class="space-y-3" id="completed-services">
+                            <!-- カードはJavaScriptで動的生成 -->
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">住所</label>
-                            <input type="text" x-model="clientForm.address"
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">プラン *</label>
-                            <select x-model="clientForm.plan" required
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">選択してください</option>
-                                <option value="ベーシック">ベーシック</option>
-                                <option value="スタンダード">スタンダード</option>
-                                <option value="プレミアム">プレミアム</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">月額料金</label>
-                            <input type="number" x-model="clientForm.monthlyFee"
-                                   class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">ステータス</label>
-                            <select x-model="clientForm.status"
-                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="有効">有効</option>
-                                <option value="保留">保留</option>
-                                <option value="無効">無効</option>
-                            </select>
-                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 他のセクション（契約管理、お知らせ、等）は同様の構造で実装 -->
+            <div id="contracts-section" class="section hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">契約管理</h3>
+                <p class="text-gray-600">契約管理機能を実装予定</p>
+            </div>
+
+            <div id="notices-section" class="section hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">お知らせ管理</h3>
+                <p class="text-gray-600">お知らせ管理機能を実装予定</p>
+            </div>
+
+            <div id="events-section" class="section hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">イベント管理</h3>
+                <p class="text-gray-600">イベント管理機能を実装予定</p>
+            </div>
+
+            <div id="documents-section" class="section hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">文書管理</h3>
+                <p class="text-gray-600">文書管理機能を実装予定</p>
+            </div>
+
+            <div id="billing-section" class="section hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">請求管理</h3>
+                <p class="text-gray-600">請求管理機能を実装予定</p>
+            </div>
+
+            <div id="staff-section" class="section hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">スタッフ管理</h3>
+                <p class="text-gray-600">スタッフ管理機能を実装予定</p>
+            </div>
+
+            <div id="audit-section" class="section hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">監査ログ</h3>
+                <p class="text-gray-600">監査ログ機能を実装予定</p>
+            </div>
+
+            <div id="settings-section" class="section hidden">
+                <h3 class="text-xl font-semibold text-gray-800 mb-6">設定</h3>
+                <p class="text-gray-600">システム設定機能を実装予定</p>
+            </div>
+        </main>
+    </div>
+
+    <!-- モーダル: 顧客追加 -->
+    <div id="add-customer-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 items-center justify-center">
+        <div class="bg-white rounded-lg p-6 w-full max-w-2xl mx-4">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">新規顧客追加</h3>
+                <button onclick="closeModal('add-customer-modal')" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="add-customer-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">会社名 *</label>
+                        <input type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">備考</label>
-                        <textarea x-model="clientForm.notes" rows="3"
-                                  class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">代表者名 *</label>
+                        <input type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
-                    <div class="flex justify-end space-x-2 pt-4">
-                        <button type="button" @click="closeClientForm()" 
-                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                            キャンセル
-                        </button>
-                        <button type="submit" 
-                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                            <span x-text="editingClient ? '更新' : '登録'"></span>
-                        </button>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">担当者名 *</label>
+                        <input type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
-                </form>
-            </div>
-        </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス *</label>
+                        <input type="email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">電話番号 *</label>
+                        <input type="tel" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">契約プラン *</label>
+                        <select required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">選択してください</option>
+                            <option value="basic">ベーシック</option>
+                            <option value="standard">スタンダード</option>
+                            <option value="premium">プレミアム</option>
+                            <option value="enterprise">エンタープライズ</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">住所</label>
+                    <textarea class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3"></textarea>
+                </div>
 
-        <!-- CSVインポートモーダル -->
-        <div x-show="showImportModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" x-transition>
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-lg m-4">
-                <div class="px-6 py-4 border-b">
-                    <h3 class="text-lg font-semibold">CSVインポート</h3>
+                <div class="flex justify-end space-x-4 pt-4">
+                    <button type="button" onclick="closeModal('add-customer-modal')" 
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        キャンセル
+                    </button>
+                    <button type="submit" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                        登録する
+                    </button>
                 </div>
-                <div class="p-6">
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">CSVファイルを選択</label>
-                        <input type="file" accept=".csv" @change="handleFileSelect"
-                               class="w-full border border-gray-300 rounded-lg px-3 py-2">
-                    </div>
-                    <div class="text-sm text-gray-600 mb-4">
-                        <p class="font-medium mb-2">CSVフォーマット:</p>
-                        <p class="font-mono text-xs bg-gray-100 p-2 rounded">
-                            name,company,phone,email,address,plan,monthlyFee,status,notes
-                        </p>
-                    </div>
-                    <div class="flex justify-end space-x-2">
-                        <button @click="showImportModal = false" 
-                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                            キャンセル
-                        </button>
-                        <button @click="importCSV()" :disabled="!csvFile"
-                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                            インポート
-                        </button>
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 
+    <!-- JavaScript -->
     <script>
-        function smartPoliceSystem() {
-            return {
-                // 認証状態
-                isLoggedIn: false,
-                credentials: { username: '', password: '' },
-                currentUser: { name: '', role: '', permissions: [] },
-                
-                // UI状態
-                currentView: 'dashboard',
-                showClientForm: false,
-                showImportModal: false,
-                editingClient: null,
-                csvFile: null,
-                
-                // 検索・フィルター
-                searchQuery: '',
-                filterStatus: '',
-                filterPlan: '',
-                
-                // ページネーション
-                currentPage: 1,
-                itemsPerPage: 10,
+        // グローバル変数
+        let currentSection = 'dashboard';
+        let currentUser = {
+            name: '管理者 太郎',
+            role: 'SUPER_ADMIN',
+            permissions: ['read', 'write', 'admin']
+        };
 
-                // 統計データ
-                stats: {
-                    totalClients: 0,
-                    activeContracts: 0,
-                    monthlyRevenue: 2850000,
-                    alertCases: 3
-                },
+        // サンプルデータ
+        let customersData = [
+            {
+                id: 1,
+                company: '株式会社サンプル',
+                representative: '田中 太郎',
+                contact: '佐藤 次郎',
+                email: 'sato@sample.co.jp',
+                phone: '03-1234-5678',
+                plan: 'premium',
+                status: 'active',
+                lastLogin: '2024-01-15 10:30',
+                region: 'tokyo'
+            },
+            {
+                id: 2,
+                company: 'ABC商事株式会社',
+                representative: '鈴木 花子',
+                contact: '高橋 三郎',
+                email: 'takahashi@abc.co.jp',
+                phone: '06-9876-5432',
+                plan: 'standard',
+                status: 'active',
+                lastLogin: '2024-01-14 15:45',
+                region: 'osaka'
+            },
+            // 追加のサンプルデータ...
+        ];
 
-                regionStats: {
-                    '東京都': 45,
-                    '神奈川県': 32,
-                    '大阪府': 28,
-                    '愛知県': 22,
-                    'その他': 18
-                },
+        let consultationsData = [
+            {
+                id: 1,
+                company: '株式会社サンプル',
+                contact: '佐藤 次郎',
+                subject: '緊急：セキュリティインシデント対応',
+                message: '社内システムに不審なアクセスが確認されました。',
+                category: 'emergency',
+                status: 'unread',
+                priority: 'urgent',
+                createdAt: '2024-01-15 09:30',
+                assignee: null
+            },
+            {
+                id: 2,
+                company: 'ABC商事株式会社',
+                contact: '高橋 三郎',
+                subject: '月次レポートについて',
+                message: '先月のセキュリティレポートの内容について質問があります。',
+                category: 'inquiry',
+                status: 'in_progress',
+                priority: 'normal',
+                createdAt: '2024-01-14 14:20',
+                assignee: '山田 担当者'
+            }
+        ];
 
-                industryStats: {
-                    '製造業': 38,
-                    '小売業': 29,
-                    'サービス業': 24,
-                    'IT関連': 19,
-                    'その他': 15
-                },
+        let servicesData = [
+            {
+                id: 1,
+                company: '株式会社サンプル',
+                service: '危機管理コンサルティング',
+                description: '年間危機管理体制の見直しと改善提案',
+                status: 'submitted',
+                priority: 'high',
+                estimatedValue: 500000,
+                dueDate: '2024-02-28',
+                assignee: '専門チームA'
+            },
+            {
+                id: 2,
+                company: 'XYZ企業',
+                service: 'セキュリティ監査',
+                description: 'IT システムの総合セキュリティ監査',
+                status: 'quoting',
+                priority: 'normal',
+                estimatedValue: 800000,
+                dueDate: '2024-03-15',
+                assignee: '監査チーム'
+            }
+        ];
 
-                // 通知データ
-                notifications: [
-                    {
-                        id: 1,
-                        title: '新規契約申込',
-                        message: '株式会社サンプルから警備契約の申込がありました',
-                        time: '5分前',
-                        icon: 'fas fa-user-plus text-blue-500',
-                        read: false
-                    },
-                    {
-                        id: 2,
-                        title: 'システムメンテナンス',
-                        message: '明日午前2時〜4時にシステムメンテナンスを実施します',
-                        time: '1時間前',
-                        icon: 'fas fa-tools text-yellow-500',
-                        read: false
-                    },
-                    {
-                        id: 3,
-                        title: '契約更新確認',
-                        message: '田中商事の契約が来月末で期限切れになります',
-                        time: '3時間前',
-                        icon: 'fas fa-exclamation-triangle text-red-500',
-                        read: true
-                    }
-                ],
-                
-                // フォームデータ
-                clientForm: {
-                    name: '', company: '', phone: '', email: '', address: '',
-                    plan: '', monthlyFee: '', status: '有効', notes: ''
-                },
-                
-                // データ
-                clients: [
-                    {
-                        id: 1, name: '田中太郎', company: '田中商事', phone: '03-1234-5678',
-                        email: 'tanaka@example.com', address: '東京都渋谷区1-2-3',
-                        plan: 'ベーシック', monthlyFee: 50000, status: '有効', notes: ''
-                    },
-                    {
-                        id: 2, name: '佐藤花子', company: 'サトウ株式会社', phone: '06-9876-5432',
-                        email: 'sato@example.com', address: '大阪府大阪市中央区4-5-6',
-                        plan: 'プレミアム', monthlyFee: 120000, status: '有効', notes: 'VIP顧客'
-                    },
-                    {
-                        id: 3, name: '鈴木一郎', company: '鈴木工業', phone: '052-1111-2222',
-                        email: 'suzuki@example.com', address: '愛知県名古屋市中区7-8-9',
-                        plan: 'スタンダード', monthlyFee: 80000, status: '保留', notes: '契約検討中'
-                    }
-                ],
-                
-                users: [
-                    { id: 1, username: 'admin', name: '管理者', role: 'SuperAdmin', active: true, lastLogin: '2024-01-15 09:30' },
-                    { id: 2, username: 'officer', name: '田中担当者', role: 'Officer', active: true, lastLogin: '2024-01-15 08:45' },
-                    { id: 3, username: 'client', name: '佐藤顧客', role: 'ClientUser', active: true, lastLogin: '2024-01-14 16:20' }
-                ],
-                
-                auditLogs: [
-                    { id: 1, timestamp: '2024-01-15 10:15:32', user: '管理者', action: '契約者追加', target: '田中太郎', result: '成功' },
-                    { id: 2, timestamp: '2024-01-15 09:30:15', user: '田中担当者', action: 'ログイン', target: 'システム', result: '成功' },
-                    { id: 3, timestamp: '2024-01-15 08:45:22', user: '佐藤顧客', action: '契約情報確認', target: '自社契約', result: '成功' }
-                ],
-                
-                // 権限定義
-                rolePermissions: {
-                    SuperAdmin: ['all'],
-                    Admin: ['dashboard', 'clients', 'users', 'reports', 'settings', 'audit'],
-                    Officer: ['dashboard', 'clients', 'reports'],
-                    Advisor: ['dashboard', 'clients'],
-                    Clerk: ['dashboard', 'clients'],
-                    ClientAdmin: ['dashboard', 'client-view'],
-                    ClientUser: ['dashboard', 'client-view'],
-                    Auditor: ['dashboard', 'audit', 'reports']
-                },
-                
-                menuItems: [
-                    { id: 'dashboard', name: 'ダッシュボード', icon: 'fas fa-tachometer-alt', permission: 'dashboard' },
-                    { id: 'clients', name: '契約者管理', icon: 'fas fa-users', permission: 'clients' },
-                    { id: 'users', name: 'ユーザー管理', icon: 'fas fa-user-cog', permission: 'users' },
-                    { id: 'reports', name: 'レポート', icon: 'fas fa-chart-bar', permission: 'reports' },
-                    { id: 'audit', name: '監査ログ', icon: 'fas fa-clipboard-list', permission: 'audit' },
-                    { id: 'settings', name: 'システム設定', icon: 'fas fa-cog', permission: 'settings' }
-                ],
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            initializeCharts();
+            loadCustomers();
+            loadConsultations();
+            loadServices();
+            setupEventListeners();
+        });
 
-                // 初期化
-                init() {
-                    // チャートの初期化は認証後に実行
-                    this.$watch('isLoggedIn', (value) => {
-                        if (value) {
-                            this.$nextTick(() => {
-                                this.initializeCharts();
-                            });
-                        }
-                    });
-                },
+        function initializeApp() {
+            // ロールベースの表示制御
+            updateUIByRole();
+            
+            // モバイルメニューの設定
+            setupMobileMenu();
+            
+            // デフォルトセクション表示
+            showSection('dashboard');
+        }
 
-                // チャート初期化
-                initializeCharts() {
-                    // 月別売上推移チャート
-                    const revenueCtx = document.getElementById('revenueChart');
-                    if (revenueCtx) {
-                        new Chart(revenueCtx, {
-                            type: 'line',
-                            data: {
-                                labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
-                                datasets: [{
-                                    label: '売上 (万円)',
-                                    data: [220, 250, 285, 310, 280, 285],
-                                    borderColor: 'rgb(59, 130, 246)',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    tension: 0.4
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    }
-                                },
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
-                    }
-
-                    // プラン別契約分布チャート
-                    const planCtx = document.getElementById('planChart');
-                    if (planCtx) {
-                        new Chart(planCtx, {
-                            type: 'doughnut',
-                            data: {
-                                labels: ['ベーシック', 'スタンダード', 'プレミアム'],
-                                datasets: [{
-                                    data: [45, 35, 20],
-                                    backgroundColor: [
-                                        'rgb(34, 197, 94)',
-                                        'rgb(59, 130, 246)',
-                                        'rgb(168, 85, 247)'
-                                    ]
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        position: 'bottom'
-                                    }
-                                }
-                            }
-                        });
-                    }
-                },
-
-                // 通知関連メソッド
-                markAsRead(notificationId) {
-                    const notification = this.notifications.find(n => n.id === notificationId);
-                    if (notification) {
-                        notification.read = true;
-                    }
-                },
-
-                markAllAsRead() {
-                    this.notifications.forEach(n => n.read = true);
-                },
-                
-                // 認証
-                login() {
-                    const users = {
-                        'admin': { password: 'admin123', name: '管理者', role: 'SuperAdmin' },
-                        'officer': { password: 'officer123', name: '田中担当者', role: 'Officer' },
-                        'client': { password: 'client123', name: '佐藤顧客', role: 'ClientUser' }
-                    };
-                    
-                    const user = users[this.credentials.username];
-                    if (user && user.password === this.credentials.password) {
-                        this.currentUser = {
-                            name: user.name,
-                            role: user.role,
-                            permissions: this.rolePermissions[user.role]
-                        };
-                        this.isLoggedIn = true;
-                        this.addAuditLog('ログイン', 'システム', '成功');
-                    } else {
-                        alert('ユーザーIDまたはパスワードが間違っています');
-                    }
-                },
-                
-                logout() {
-                    this.addAuditLog('ログアウト', 'システム', '成功');
-                    this.isLoggedIn = false;
-                    this.credentials = { username: '', password: '' };
-                    this.currentUser = { name: '', role: '', permissions: [] };
-                    this.currentView = 'dashboard';
-                },
-                
-                // 権限チェック
-                hasPermission(permission) {
-                    return this.currentUser.permissions.includes('all') || 
-                           this.currentUser.permissions.includes(permission);
-                },
-                
-                // 契約者管理
-                get filteredClients() {
-                    return this.clients.filter(client => {
-                        const matchesSearch = !this.searchQuery || 
-                            client.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                            client.company.toLowerCase().includes(this.searchQuery.toLowerCase());
-                        const matchesStatus = !this.filterStatus || client.status === this.filterStatus;
-                        const matchesPlan = !this.filterPlan || client.plan === this.filterPlan;
-                        return matchesSearch && matchesStatus && matchesPlan;
-                    });
-                },
-                
-                get paginatedClients() {
-                    const start = (this.currentPage - 1) * this.itemsPerPage;
-                    return this.filteredClients.slice(start, start + this.itemsPerPage);
-                },
-                
-                get totalPages() {
-                    return Math.ceil(this.filteredClients.length / this.itemsPerPage);
-                },
-                
-                openClientForm(client = null) {
-                    this.editingClient = client;
-                    if (client) {
-                        this.clientForm = { ...client };
-                    } else {
-                        this.clientForm = {
-                            name: '', company: '', phone: '', email: '', address: '',
-                            plan: '', monthlyFee: '', status: '有効', notes: ''
-                        };
-                    }
-                    this.showClientForm = true;
-                },
-                
-                closeClientForm() {
-                    this.showClientForm = false;
-                    this.editingClient = null;
-                },
-                
-                saveClient() {
-                    if (this.editingClient) {
-                        const index = this.clients.findIndex(c => c.id === this.editingClient.id);
-                        this.clients[index] = { ...this.clientForm, id: this.editingClient.id };
-                        this.addAuditLog('契約者更新', this.clientForm.name, '成功');
-                    } else {
-                        const newId = Math.max(...this.clients.map(c => c.id)) + 1;
-                        this.clients.push({ ...this.clientForm, id: newId });
-                        this.addAuditLog('契約者追加', this.clientForm.name, '成功');
-                    }
-                    this.closeClientForm();
-                },
-                
-                deleteClient(clientId) {
-                    if (confirm('本当に削除しますか？')) {
-                        const client = this.clients.find(c => c.id === clientId);
-                        this.clients = this.clients.filter(c => c.id !== clientId);
-                        this.addAuditLog('契約者削除', client.name, '成功');
-                    }
-                },
-                
-                printClient(client) {
-                    window.print();
-                    this.addAuditLog('契約者印刷', client.name, '成功');
-                },
-                
-                clearFilters() {
-                    this.searchQuery = '';
-                    this.filterStatus = '';
-                    this.filterPlan = '';
-                    this.currentPage = 1;
-                },
-                
-                // CSV機能
-                exportCSV(type) {
-                    let data, filename;
-                    if (type === 'clients') {
-                        data = this.clients;
-                        filename = 'clients.csv';
-                    }
-                    
-                    const headers = Object.keys(data[0]).join(',');
-                    const rows = data.map(item => Object.values(item).join(','));
-                    const csv = [headers, ...rows].join('\n');
-                    
-                    const blob = new Blob([csv], { type: 'text/csv' });
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = filename;
-                    a.click();
-                    
-                    this.addAuditLog('CSVエクスポート', filename, '成功');
-                },
-                
-                handleFileSelect(event) {
-                    this.csvFile = event.target.files[0];
-                },
-                
-                importCSV() {
-                    if (!this.csvFile) return;
-                    
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const csv = e.target.result;
-                        const lines = csv.split('\n');
-                        const headers = lines[0].split(',');
-                        
-                        for (let i = 1; i < lines.length; i++) {
-                            if (lines[i].trim()) {
-                                const values = lines[i].split(',');
-                                const client = {};
-                                headers.forEach((header, index) => {
-                                    client[header.trim()] = values[index]?.trim();
-                                });
-                                client.id = Math.max(...this.clients.map(c => c.id)) + 1;
-                                this.clients.push(client);
-                            }
-                        }
-                    };
-                    reader.readAsText(this.csvFile);
-                    this.showImportModal = false;
-                    this.addAuditLog('CSVインポート', this.csvFile.name, '成功');
-                },
-                
-                // ユーザー管理
-                openUserForm(user = null) {
-                    // ユーザー管理フォームの実装
-                },
-                
-                toggleUserStatus(userId) {
-                    const user = this.users.find(u => u.id === userId);
-                    if (user) {
-                        user.active = !user.active;
-                        this.addAuditLog('ユーザー状態変更', user.name, '成功');
-                    }
-                },
-                
-                // 監査ログ
-                addAuditLog(action, target, result) {
-                    const log = {
-                        id: this.auditLogs.length + 1,
-                        timestamp: new Date().toLocaleString('ja-JP'),
-                        user: this.currentUser.name,
-                        action,
-                        target,
-                        result
-                    };
-                    this.auditLogs.unshift(log);
-                }
+        function updateUIByRole() {
+            const role = currentUser.role;
+            
+            // SUPER_ADMIN以外は監査ログを非表示
+            if (role !== 'SUPER_ADMIN') {
+                document.querySelectorAll('.role-superadmin').forEach(el => {
+                    el.style.display = 'none';
+                });
+            }
+            
+            // CLIENT_ADMIN, CLIENT_STAFFはスタッフ管理を非表示
+            if (['CLIENT_ADMIN', 'CLIENT_STAFF'].includes(role)) {
+                document.querySelectorAll('.role-admin').forEach(el => {
+                    el.style.display = 'none';
+                });
             }
         }
+
+        function setupMobileMenu() {
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebar = document.getElementById('sidebar');
+            
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('mobile-open');
+                });
+            }
+        }
+
+        function setupEventListeners() {
+            // 検索フィールドのリアルタイム検索
+            const customerSearch = document.getElementById('customer-search');
+            if (customerSearch) {
+                customerSearch.addEventListener('input', debounce(applyFilters, 300));
+            }
+
+            // 全選択チェックボックス
+            const selectAll = document.getElementById('select-all-customers');
+            if (selectAll) {
+                selectAll.addEventListener('change', function() {
+                    const checkboxes = document.querySelectorAll('input[name="customer-select"]');
+                    checkboxes.forEach(cb => cb.checked = this.checked);
+                });
+            }
+
+            // 顧客追加フォーム
+            const addCustomerForm = document.getElementById('add-customer-form');
+            if (addCustomerForm) {
+                addCustomerForm.addEventListener('submit', handleAddCustomer);
+            }
+        }
+
+        // セクション表示制御
+        function showSection(sectionName) {
+            // 現在のセクションを非表示
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+
+            // 新しいセクションを表示
+            const targetSection = document.getElementById(sectionName + '-section');
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            // ページタイトル更新
+            const pageTitles = {
+                'dashboard': 'ダッシュボード',
+                'customers': '顧客管理',
+                'consultations': '相談管理',
+                'services': 'サービス管理',
+                'contracts': '契約管理',
+                'notices': 'お知らせ管理',
+                'events': 'イベント管理',
+                'documents': '文書管理',
+                'billing': '請求管理',
+                'staff': 'スタッフ管理',
+                'audit': '監査ログ',
+                'settings': '設定'
+            };
+
+            document.getElementById('page-title').textContent = pageTitles[sectionName] || 'SmartPolice管理システム';
+
+            // ナビゲーション状態更新
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('bg-blue-800', 'text-white');
+                item.classList.add('text-blue-100');
+            });
+
+            // アクティブな項目をハイライト
+            const activeNavItem = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
+            if (activeNavItem) {
+                activeNavItem.classList.remove('text-blue-100');
+                activeNavItem.classList.add('bg-blue-800', 'text-white');
+            }
+
+            currentSection = sectionName;
+
+            // セクション固有の初期化
+            if (sectionName === 'dashboard') {
+                updateDashboardData();
+            }
+        }
+
+        // Chart.js初期化
+        function initializeCharts() {
+            // 売上推移チャート
+            const revenueCtx = document.getElementById('revenueChart');
+            if (revenueCtx) {
+                new Chart(revenueCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['1月', '2月', '3月', '4月', '5月', '6月'],
+                        datasets: [{
+                            label: '月間売上 (万円)',
+                            data: [650, 720, 580, 810, 920, 845],
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 顧客ステータスチャート
+            const statusCtx = document.getElementById('customerStatusChart');
+            if (statusCtx) {
+                new Chart(statusCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['アクティブ', '非アクティブ', '試用期間', '期限切れ'],
+                        datasets: [{
+                            data: [892, 156, 78, 121],
+                            backgroundColor: [
+                                'rgb(34, 197, 94)',
+                                'rgb(107, 114, 128)',
+                                'rgb(249, 115, 22)',
+                                'rgb(239, 68, 68)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 顧客管理関数群
+        function loadCustomers() {
+            const tbody = document.getElementById('customers-table-body');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+
+            customersData.forEach(customer => {
+                const statusBadge = getStatusBadge(customer.status);
+                const planBadge = getPlanBadge(customer.plan);
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <input type="checkbox" name="customer-select" value="${customer.id}" class="rounded">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">${customer.company}</div>
+                        <div class="text-sm text-gray-500">${customer.representative}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${customer.contact}</div>
+                        <div class="text-sm text-gray-500">${customer.email}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${planBadge}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        ${statusBadge}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${customer.lastLogin}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="viewCustomer(${customer.id})" class="text-blue-600 hover:text-blue-900 mr-3">詳細</button>
+                        <button onclick="editCustomer(${customer.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">編集</button>
+                        <button onclick="deleteCustomer(${customer.id})" class="text-red-600 hover:text-red-900">削除</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function getStatusBadge(status) {
+            const badges = {
+                'active': '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">アクティブ</span>',
+                'inactive': '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">非アクティブ</span>',
+                'trial': '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">試用期間</span>',
+                'expired': '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">期限切れ</span>'
+            };
+            return badges[status] || badges['inactive'];
+        }
+
+        function getPlanBadge(plan) {
+            const badges = {
+                'basic': '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">ベーシック</span>',
+                'standard': '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">スタンダード</span>',
+                'premium': '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">プレミアム</span>',
+                'enterprise': '<span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-indigo-100 text-indigo-800">エンタープライズ</span>'
+            };
+            return badges[plan] || badges['basic'];
+        }
+
+        // 相談管理関数群
+        function loadConsultations() {
+            const container = document.getElementById('consultations-list');
+            if (!container) return;
+
+            container.innerHTML = '';
+
+            consultationsData.forEach(consultation => {
+                const urgencyClass = consultation.priority === 'urgent' ? 'border-l-4 border-red-500 bg-red-50' : 'bg-white';
+                const statusBadge = getConsultationStatusBadge(consultation.status);
+                const priorityIcon = consultation.priority === 'urgent' ? '<i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>' : '';
+
+                const card = document.createElement('div');
+                card.className = `${urgencyClass} rounded-lg shadow-sm border border-gray-200 p-6`;
+                card.innerHTML = `
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <div class="flex items-center mb-2">
+                                ${priorityIcon}
+                                <h4 class="text-lg font-medium text-gray-900">${consultation.subject}</h4>
+                                ${statusBadge}
+                            </div>
+                            <p class="text-gray-600 mb-3">${consultation.message}</p>
+                            <div class="flex items-center text-sm text-gray-500 space-x-4">
+                                <span><i class="fas fa-building mr-1"></i>${consultation.company}</span>
+                                <span><i class="fas fa-user mr-1"></i>${consultation.contact}</span>
+                                <span><i class="fas fa-clock mr-1"></i>${consultation.createdAt}</span>
+                                ${consultation.assignee ? `<span><i class="fas fa-user-tie mr-1"></i>${consultation.assignee}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="ml-4 flex space-x-2">
+                            <button onclick="replyToConsultation(${consultation.id})" 
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                返信
+                            </button>
+                            <button onclick="assignConsultation(${consultation.id})" 
+                                    class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                                担当者割当
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function getConsultationStatusBadge(status) {
+            const badges = {
+                'unread': '<span class="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">未読</span>',
+                'in_progress': '<span class="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">対応中</span>',
+                'resolved': '<span class="ml-2 px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">解決済み</span>'
+            };
+            return badges[status] || '';
+        }
+
+        function showConsultationTab(tab) {
+            // タブの切り替え表示
+            document.querySelectorAll('.consultation-tab').forEach(tabEl => {
+                tabEl.classList.remove('border-blue-500', 'text-blue-600');
+                tabEl.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+
+            // TODO: タブに応じてフィルタリング
+            console.log('Showing consultations for tab:', tab);
+        }
+
+        // サービス管理関数群
+        function loadServices() {
+            // Kanbanボードの各ステータスコンテナをクリア
+            const containers = {
+                'submitted': document.getElementById('submitted-services'),
+                'quoting': document.getElementById('quoting-services'),
+                'in_progress': document.getElementById('in-progress-services'),
+                'completed': document.getElementById('completed-services')
+            };
+
+            Object.values(containers).forEach(container => {
+                if (container) container.innerHTML = '';
+            });
+
+            servicesData.forEach(service => {
+                const container = containers[service.status];
+                if (!container) return;
+
+                const priorityColor = service.priority === 'high' ? 'border-red-200 bg-red-50' : 'bg-white';
+                const estimatedValue = service.estimatedValue ? `¥${service.estimatedValue.toLocaleString()}` : '見積未定';
+
+                const card = document.createElement('div');
+                card.className = `kanban-card ${priorityColor} border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-md transition-all`;
+                card.innerHTML = `
+                    <div class="mb-2">
+                        <h5 class="font-medium text-gray-900 mb-1">${service.service}</h5>
+                        <p class="text-sm text-gray-600">${service.company}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-3">${service.description}</p>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-green-600 font-medium">${estimatedValue}</span>
+                        <span class="text-gray-500">${service.dueDate}</span>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-gray-100">
+                        <span class="text-xs text-blue-600">${service.assignee}</span>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => viewServiceDetail(service.id));
+                container.appendChild(card);
+            });
+        }
+
+        // モーダル関数群
+        function showAddCustomerModal() {
+            showModal('add-customer-modal');
+        }
+
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('show');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            }
+        }
+
+        // フォーム処理
+        function handleAddCustomer(e) {
+            e.preventDefault();
+            
+            // TODO: フォームデータの取得と保存
+            showToast('新規顧客が正常に追加されました', 'success');
+            closeModal('add-customer-modal');
+            
+            // フォームリセット
+            e.target.reset();
+            
+            // 顧客一覧を再読み込み
+            loadCustomers();
+        }
+
+        // ユーティリティ関数
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            
+            if (toast && toastMessage) {
+                toastMessage.textContent = message;
+                toast.className = `toast show fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+                    type === 'success' ? 'bg-green-500' : 'bg-red-500'
+                } text-white`;
+                
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+
+        function updateDashboardData() {
+            // ダッシュボードのリアルタイムデータ更新
+            // TODO: APIからデータを取得して表示を更新
+        }
+
+        // アクション関数群
+        function applyFilters() {
+            const searchTerm = document.getElementById('customer-search')?.value.toLowerCase() || '';
+            const statusFilter = document.getElementById('status-filter')?.value || '';
+            const planFilter = document.getElementById('plan-filter')?.value || '';
+            const regionFilter = document.getElementById('region-filter')?.value || '';
+
+            // TODO: フィルタリングロジックの実装
+            console.log('Applying filters:', { searchTerm, statusFilter, planFilter, regionFilter });
+            
+            // 実際の実装では、ここでcustomersDataをフィルタリングしてloadCustomers()を呼び出す
+        }
+
+        function clearFilters() {
+            document.getElementById('customer-search').value = '';
+            document.getElementById('status-filter').value = '';
+            document.getElementById('plan-filter').value = '';
+            document.getElementById('region-filter').value = '';
+            
+            applyFilters();
+        }
+
+        function exportCustomers() {
+            showToast('顧客データをエクスポートしています...', 'success');
+            // TODO: CSVエクスポート機能の実装
+        }
+
+        function exportConsultations() {
+            showToast('相談データをエクスポートしています...', 'success');
+            // TODO: エクスポート機能の実装
+        }
+
+        function exportServices() {
+            showToast('サービスデータをエクスポートしています...', 'success');
+            // TODO: エクスポート機能の実装
+        }
+
+        function markAllAsRead() {
+            showToast('全ての相談を既読にしました', 'success');
+            // TODO: 既読処理の実装
+        }
+
+        function viewCustomer(id) {
+            console.log('Viewing customer:', id);
+            // TODO: 顧客詳細モーダルの実装
+        }
+
+        function editCustomer(id) {
+            console.log('Editing customer:', id);
+            // TODO: 顧客編集モーダルの実装
+        }
+
+        function deleteCustomer(id) {
+            if (confirm('この顧客を削除してもよろしいですか？')) {
+                console.log('Deleting customer:', id);
+                // TODO: 削除処理の実装
+                showToast('顧客が削除されました', 'success');
+            }
+        }
+
+        function replyToConsultation(id) {
+            console.log('Replying to consultation:', id);
+            // TODO: 返信モーダルの実装
+        }
+
+        function assignConsultation(id) {
+            console.log('Assigning consultation:', id);
+            // TODO: 担当者割当モーダルの実装
+        }
+
+        function viewServiceDetail(id) {
+            console.log('Viewing service detail:', id);
+            // TODO: サービス詳細モーダルの実装
+        }
+
+        function logout() {
+            if (confirm('ログアウトしてもよろしいですか？')) {
+                // TODO: ログアウト処理の実装
+                window.location.href = '/login';
+            }
+        }
+
+        // モーダルの外側クリックで閉じる
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal')) {
+                e.target.classList.remove('show');
+                document.body.style.overflow = 'auto';
+            }
+        });
     </script>
 </body>
 </html>
