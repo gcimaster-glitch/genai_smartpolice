@@ -4,812 +4,983 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>スマートポリス 契約企業向けポータル</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#2563eb',
+                        'secondary': '#64748b',
+                        'danger': '#dc2626',
+                        'warning': '#d97706',
+                        'success': '#059669',
+                        'info': '#2563eb'
+                    }
+                }
+            }
+        }
+    </script>
+    
     <style>
-        :root {
-            --bg: #F5F7FA;
-            --card-bg: #FFFFFF;
-            --text: #111827;
-            --muted: #6B7280;
-            --primary: #1565C0;
-            --primary-hover: #0B53A3;
-            --danger: #E74C3C;
-            --success: #28A745;
-            --info: #0EA5E9;
-            --warning: #F59E0B;
-            --shadow: 0 4px 12px rgba(16,24,40,0.06);
-            --radius: 8px;
-            --gap: 16px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            line-height: 1.4;
-            font-size: 15px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 24px;
-            display: grid;
-            grid-template-columns: 260px 1fr;
-            gap: 32px;
-        }
-
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: var(--gap);
-        }
-
-        .main-content {
-            display: flex;
-            flex-direction: column;
-            gap: var(--gap);
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            padding: 20px;
-        }
-
-        .card.compact {
-            padding: 16px;
-        }
-
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .card-header h2 {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .card-header h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .profile-card {
-            text-align: center;
-        }
-
-        .profile-card .avatar {
-            width: 96px;
-            height: 96px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin: 0 auto 16px;
-            display: block;
-        }
-
-        .profile-card h3 {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-            color: var(--text);
-        }
-
-        .profile-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-bottom: 16px;
-        }
-
-        .profile-meta .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 0.8125rem;
-            color: var(--muted);
-        }
-
-        .profile-meta .meta-item i {
-            width: 14px;
-            color: var(--primary);
-        }
-
-        .profile-stats {
-            border-top: 1px solid #EEF2F7;
-            padding-top: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .profile-stats .stat-item {
-            font-size: 0.8125rem;
-            color: var(--muted);
-        }
-
-        .profile-stats .stat-item strong {
-            color: var(--text);
-            font-weight: 600;
-        }
-
-        .status-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--gap);
-            margin-bottom: 24px;
-        }
-
-        .status-card {
-            text-align: center;
-            padding: 20px;
-        }
-
-        .status-card .number {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary);
-            display: block;
-        }
-
-        .status-card .label {
-            font-size: 0.9375rem;
-            color: var(--muted);
-            margin-bottom: 8px;
-        }
-
-        .status-card .meta {
-            font-size: 0.75rem;
-            color: var(--muted);
-        }
-
-        .notifications-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .notification-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px;
-            border-radius: 6px;
-            background: #F8F9FA;
-        }
-
-        .notification-item.important {
-            background: #FEF2F2;
-            border-left: 4px solid var(--danger);
-        }
-
-        .notification-badge {
-            background: var(--danger);
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-
-        .notification-badge.info {
-            background: var(--info);
-        }
-
-        .notification-badge.event {
-            background: var(--success);
-        }
-
-        .notification-content {
-            flex: 1;
-        }
-
-        .notification-title {
-            font-weight: 600;
-            font-size: 0.9375rem;
-            margin-bottom: 4px;
-        }
-
-        .notification-summary {
-            font-size: 0.8125rem;
-            color: var(--muted);
-            margin-bottom: 4px;
-        }
-
-        .notification-date {
-            font-size: 0.75rem;
-            color: var(--muted);
-        }
-
-        .operations-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 12px;
-        }
-
-        .operation-btn {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px;
-            border-radius: 6px;
-            font-size: 0.8125rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.12s ease;
-            text-align: center;
-        }
-
-        .operation-btn:hover {
-            background: var(--primary-hover);
-        }
-
-        .operation-btn i {
-            display: block;
-            font-size: 1.5rem;
-            margin-bottom: 8px;
-        }
-
-        .billing-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .billing-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9375rem;
-        }
-
-        .billing-row.total {
-            border-top: 1px solid #EEF2F7;
-            padding-top: 8px;
-            font-weight: 600;
-            font-size: 1rem;
-        }
-
-        .billing-due {
-            text-align: center;
-            margin-top: 12px;
-            padding-top: 12px;
-            border-top: 1px solid #EEF2F7;
-        }
-
-        .billing-due .due-label {
-            font-size: 0.75rem;
-            color: var(--muted);
-            margin-bottom: 4px;
-        }
-
-        .billing-due .due-date {
-            font-weight: 600;
-            color: var(--text);
-        }
-
-        .seminar-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .seminar-item {
-            padding: 12px;
-            border: 1px solid #EEF2F7;
-            border-radius: 6px;
-        }
-
-        .seminar-title {
-            font-weight: 600;
-            font-size: 0.9375rem;
-            margin-bottom: 8px;
-            color: var(--primary);
-        }
-
-        .seminar-details {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .seminar-detail {
-            font-size: 0.8125rem;
-            color: var(--muted);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .company-info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 24px;
-        }
-
-        .info-section h4 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: var(--text);
-            border-bottom: 2px solid var(--primary);
-            padding-bottom: 8px;
-        }
-
-        .info-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .info-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            font-size: 0.9375rem;
-        }
-
-        .info-label {
-            color: var(--muted);
-            min-width: 120px;
-        }
-
-        .info-value {
-            color: var(--text);
-            font-weight: 500;
-            text-align: right;
-            flex: 1;
-        }
-
-        .contract-history table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .contract-history th,
-        .contract-history td {
-            padding: 12px 16px;
-            text-align: left;
-            border-bottom: 1px solid #EEF2F7;
-            font-size: 0.9375rem;
-        }
-
-        .contract-history th {
-            font-weight: 600;
-            color: var(--muted);
-            background: #F8F9FA;
-        }
-
-        .user-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--gap);
-        }
-
-        .user-card {
-            text-align: center;
-            padding: 16px;
-            border: 1px solid #EEF2F7;
-            border-radius: 6px;
-        }
-
-        .user-avatar {
-            width: 48px;
-            height: 48px;
-            background: #F3F4F6;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 12px;
-        }
-
-        .user-name {
-            font-weight: 600;
-            font-size: 0.9375rem;
-            margin-bottom: 4px;
-        }
-
-        .user-role {
-            font-size: 0.8125rem;
-            color: var(--muted);
-        }
-
-        .activity-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .activity-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .activity-icon {
-            width: 32px;
-            height: 32px;
-            background: #F3F4F6;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-        }
-
-        .activity-content {
-            flex: 1;
-        }
-
-        .activity-title {
-            font-size: 0.9375rem;
-            font-weight: 500;
-            margin-bottom: 2px;
-        }
-
-        .activity-time {
-            font-size: 0.75rem;
-            color: var(--muted);
-        }
-
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-                gap: var(--gap);
-                padding: 16px;
-            }
-
-            .status-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .company-info-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .operations-grid {
-                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .focus-ring:focus {
+            outline: 2px solid #2563eb;
+            outline-offset: 2px;
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <!-- サイドバー -->
-        <div class="sidebar">
-            <!-- 専属危機管理官 -->
-            <div class="card profile-card">
-                <div class="card-header">
-                    <h3>専属危機管理官</h3>
-                </div>
-                <img class="avatar" src="https://page.gensparksite.com/v1/base64_upload/263c53fc22d0e51a1bd96ad2b75ece61" alt="高橋公義危機管理官">
-                <h3>高橋公義危機管理官</h3>
-                <div class="profile-meta">
-                    <div class="meta-item">
-                        <i class="fas fa-phone"></i>
-                        <span>090-1234-5678</span>
-                    </div>
-                    <div class="meta-item">
-                        <i class="fas fa-envelope"></i>
-                        <span>takahashi@smartpolice.co.jp</span>
-                    </div>
-                    <div class="meta-item">
-                        <i class="fas fa-clock"></i>
-                        <span>対応時間: 24時間365日</span>
-                    </div>
-                </div>
-                <div class="profile-stats">
-                    <div class="stat-item">最終対応: 2024年8月28日 16:45</div>
-                    <div class="stat-item">対応実績: <strong>1,250+件</strong></div>
-                </div>
-            </div>
 
-            <!-- よく使う操作 -->
-            <div class="card compact">
-                <div class="card-header">
-                    <h3>よく使う操作</h3>
+<body class="bg-gray-50 font-sans min-h-screen">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <div class="text-2xl font-bold text-primary">SMART POLICE</div>
+                    </div>
+                    <div class="hidden md:block text-sm text-secondary">
+                        契約企業向けポータル
+                    </div>
                 </div>
-                <div class="operations-grid">
-                    <button class="operation-btn">
-                        <i class="fas fa-shield-alt"></i>
-                        カスハラ出動依頼
-                    </button>
-                    <button class="operation-btn">
-                        <i class="fas fa-certificate"></i>
-                        セキュリティシール
-                    </button>
-                    <button class="operation-btn">
-                        <i class="fas fa-graduation-cap"></i>
-                        セキュリティ研修
-                    </button>
-                    <button class="operation-btn">
-                        <i class="fas fa-search"></i>
-                        リスク診断
-                    </button>
-                </div>
-            </div>
+                
+                <div class="flex items-center space-x-6">
+                    <div class="hidden md:flex items-center space-x-2 text-sm">
+                        <i class="fas fa-phone text-danger"></i>
+                        <span class="text-gray-700">緊急時:</span>
+                        <span class="font-bold text-danger">24時間 0120-999-119</span>
+                    </div>
+                    
+                    <div class="relative">
+                        <button class="text-gray-400 hover:text-gray-500 relative">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span class="absolute -top-2 -right-2 bg-danger text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+                        </button>
+                    </div>
+                    
+                    <div class="relative">
+                        <button onclick="toggleUserDropdown()" class="flex items-center space-x-3 hover:bg-gray-50 rounded-lg p-2">
+                            <div class="bg-primary text-white rounded-full h-9 w-9 flex items-center justify-center">
+                                <i class="fas fa-user text-sm"></i>
+                            </div>
+                            <div class="hidden md:block text-left">
+                                <div class="text-sm font-medium text-gray-900">田中太郎</div>
+                                <div class="text-xs text-secondary">○○ホールディングス株式会社</div>
+                            </div>
+                        </button>
 
-            <!-- 次の請求予定 -->
-            <div class="card compact">
-                <div class="card-header">
-                    <h3>次の請求予定</h3>
-                </div>
-                <div class="billing-details">
-                    <div class="billing-row">
-                        <span>今月の月額料金</span>
-                        <span>¥50,000</span>
-                    </div>
-                    <div class="billing-row">
-                        <span>オプション料金</span>
-                        <span>¥12,000</span>
-                    </div>
-                    <div class="billing-row">
-                        <span>消費税</span>
-                        <span>¥6,200</span>
-                    </div>
-                    <div class="billing-row total">
-                        <span>合計（税込）</span>
-                        <span>¥68,200</span>
-                    </div>
-                </div>
-                <div class="billing-due">
-                    <div class="due-label">支払期限</div>
-                    <div class="due-date">2024年9月30日</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- メインコンテンツ -->
-        <div class="main-content">
-            <!-- 現在の対応中 -->
-            <div class="status-grid">
-                <div class="card status-card compact">
-                    <div class="label">未解決の相談</div>
-                    <span class="number">2</span>
-                    <div class="meta">件</div>
-                </div>
-                <div class="card status-card compact">
-                    <div class="label">処理中の申請</div>
-                    <span class="number">1</span>
-                    <div class="meta">件</div>
-                </div>
-                <div class="card status-card compact">
-                    <div class="label">最終更新</div>
-                    <div class="meta">2024年8月28日 15:30</div>
-                </div>
-            </div>
-
-            <!-- お知らせ -->
-            <div class="card">
-                <div class="card-header">
-                    <i class="fas fa-bell" style="color: var(--info);"></i>
-                    <h2>お知らせ</h2>
-                </div>
-                <div class="notifications-list">
-                    <div class="notification-item important">
-                        <div class="notification-badge">重要</div>
-                        <div class="notification-content">
-                            <div class="notification-title">緊急メンテナンスのお知らせ</div>
-                            <div class="notification-summary">2024年9月1日（日）午前2時～4時の間、システムメンテナンスを実施いたします。この時間帯はサービスをご利用いただけません。ご迷惑をおかけしますが、ご理解のほどよろしくお願いします。</div>
-                            <div class="notification-date">2024年8月25日 システム管理者</div>
-                        </div>
-                    </div>
-                    <div class="notification-item">
-                        <div class="notification-badge info">お知らせ</div>
-                        <div class="notification-content">
-                            <div class="notification-title">新機能リリースのご案内</div>
-                            <div class="notification-summary">スマートポリスに新機能「リアルタイム監視ダッシュボード」が追加されました。より詳細な監視情報をリアルタイムで確認いただけるようになりました。</div>
-                            <div class="notification-date">2024年8月20日 開発チーム</div>
-                        </div>
-                    </div>
-                    <div class="notification-item">
-                        <div class="notification-badge event">イベント</div>
-                        <div class="notification-content">
-                            <div class="notification-title">セミナー開催決定</div>
-                            <div class="notification-summary">「カスタマーハラスメント対策実践セミナー」の開催が決定いたしました。実際の事例を基にした実践的な内容となっております。</div>
-                            <div class="notification-date">2024年8月18日 研修部</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- セミナー情報と自社情報のグリッド -->
-            <div class="company-info-grid">
-                <!-- セミナー情報 -->
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-graduation-cap" style="color: var(--success);"></i>
-                        <h3>開催予定のセミナー</h3>
-                    </div>
-                    <div class="seminar-list">
-                        <div class="seminar-item">
-                            <div class="seminar-title">リスク管理基礎講座</div>
-                            <div class="seminar-details">
-                                <div class="seminar-detail">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2024年9月15日 14:00-16:00</span>
-                                </div>
-                                <div class="seminar-detail">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>オンライン開催</span>
+                        <div id="user-dropdown-menu" class="absolute right-0 mt-2 w-64 bg-primary rounded-lg shadow-xl z-50 hidden">
+                            <div class="p-4 border-b border-blue-600">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-white bg-opacity-20 rounded-full h-10 w-10 flex items-center justify-center">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                    <div>
+                                        <div class="text-white font-medium">田中太郎</div>
+                                        <div class="text-blue-100 text-xs">管理者アカウント</div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="seminar-item">
-                            <div class="seminar-title">カスハラ対策実践</div>
-                            <div class="seminar-details">
-                                <div class="seminar-detail">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2024年10月5日 10:00-17:00</span>
-                                </div>
-                                <div class="seminar-detail">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>東京会場 + オンライン</span>
-                                </div>
+                            
+                            <div class="py-2">
+                                <button onclick="showPage('company')" class="w-full text-left px-4 py-3 text-white hover:bg-blue-500 flex items-center">
+                                    <i class="fas fa-building text-blue-200 w-5 mr-3"></i>
+                                    <span>自社情報</span>
+                                </button>
+                                <button onclick="showPage('settings')" class="w-full text-left px-4 py-3 text-white hover:bg-blue-500 flex items-center">
+                                    <i class="fas fa-cog text-blue-200 w-5 mr-3"></i>
+                                    <span>設定</span>
+                                </button>
                             </div>
-                        </div>
-                        <div class="seminar-item">
-                            <div class="seminar-title">情報セキュリティ対策</div>
-                            <div class="seminar-details">
-                                <div class="seminar-detail">
-                                    <i class="fas fa-calendar"></i>
-                                    <span>2024年10月20日 13:00-15:00</span>
-                                </div>
-                                <div class="seminar-detail">
-                                    <i class="fas fa-map-marker-alt"></i>
-                                    <span>大阪会場</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- 自社情報 -->
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-building" style="color: var(--primary);"></i>
-                        <h3>自社情報</h3>
-                    </div>
-                    <div class="info-section">
-                        <h4>基本情報</h4>
-                        <div class="info-list">
-                            <div class="info-item">
-                                <span class="info-label">会社名</span>
-                                <span class="info-value">○○ホールディングス株式会社</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">代表者</span>
-                                <span class="info-value">田中太郎</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">設立年月日</span>
-                                <span class="info-value">2015年4月1日</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">資本金</span>
-                                <span class="info-value">5,000万円</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">従業員数</span>
-                                <span class="info-value">125名</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">業種</span>
-                                <span class="info-value">小売業</span>
+                            <div class="border-t border-blue-600 p-3">
+                                <button class="w-full text-left px-2 py-2 text-blue-100 hover:text-white text-sm flex items-center">
+                                    <i class="fas fa-sign-out-alt text-blue-200 w-5 mr-3"></i>
+                                    <span>ログアウト</span>
+                                </button>
                             </div>
                         </div>
-                    </div>
-                    <div class="info-section" style="margin-top: 20px;">
-                        <h4>連絡先情報</h4>
-                        <div class="info-list">
-                            <div class="info-item">
-                                <span class="info-label">本社所在地</span>
-                                <span class="info-value">〒100-0001<br>東京都千代田区千代田1-1-1<br>千代田ビル15F</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">電話番号</span>
-                                <span class="info-value">03-1234-5678</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">FAX</span>
-                                <span class="info-value">03-1234-5679</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="info-label">メールアドレス</span>
-                                <span class="info-value">info@company.co.jp</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- オプションサービスと契約変更履歴 -->
-            <div class="company-info-grid">
-                <!-- オプションサービス -->
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-cogs" style="color: var(--warning);"></i>
-                        <h3>オプションサービス</h3>
-                    </div>
-                    <div class="info-list">
-                        <div class="info-item">
-                            <span class="info-label">契約プラン</span>
-                            <span class="info-value">スタンダードプラン</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">契約開始日</span>
-                            <span class="info-value">2024年1月15日</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">次回更新日</span>
-                            <span class="info-value">2025年1月14日</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">月額基本料金</span>
-                            <span class="info-value">¥50,000（税込 ¥55,000）</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="info-label">利用可能チケット</span>
-                            <span class="info-value">月10件まで</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 契約変更履歴 -->
-                <div class="card">
-                    <div class="card-header">
-                        <i class="fas fa-history" style="color: var(--muted);"></i>
-                        <h3>契約変更履歴</h3>
-                    </div>
-                    <div class="contract-history">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>変更日</th>
-                                    <th>変更内容</th>
-                                    <th>変更前</th>
-                                    <th>変更後</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>2024/08/01</td>
-                                    <td>オプション追加</td>
-                                    <td>基本プランのみ</td>
-                                    <td>追加チケット（5件/月）を追加</td>
-                                </tr>
-                                <tr>
-                                    <td>2024/06/15</td>
-                                    <td>プラン変更</td>
-                                    <td>ライトプラン</td>
-                                    <td>スタンダードプラン</td>
-                                </tr>
-                                <tr>
-                                    <td>2024/01/15</td>
-                                    <td>契約開始</td>
-                                    <td>-</td>
-                                    <td>ライトプラン契約</td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </header>
+
+    <!-- ナビゲーション -->
+    <nav class="bg-primary">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex space-x-8 py-3">
+                <button onclick="showPage('dashboard')" class="nav-link text-white border-b-2 border-white px-2 pb-1 text-sm font-medium" data-page="dashboard">
+                    <i class="fas fa-home mr-2"></i>ホーム
+                </button>
+                <button onclick="showPage('announcements')" class="nav-link text-blue-100 hover:text-white px-2 pb-1 text-sm font-medium" data-page="announcements">
+                    <i class="fas fa-bullhorn mr-2"></i>お知らせ
+                </button>
+                <button onclick="showPage('messages')" class="nav-link text-blue-100 hover:text-white px-2 pb-1 text-sm font-medium" data-page="messages">
+                    <i class="fas fa-comments mr-2"></i>相談・連絡
+                </button>
+                <button onclick="showPage('services')" class="nav-link text-blue-100 hover:text-white px-2 pb-1 text-sm font-medium" data-page="services">
+                    <i class="fas fa-concierge-bell mr-2"></i>申請（サービス）
+                </button>
+                <button onclick="showPage('materials')" class="nav-link text-blue-100 hover:text-white px-2 pb-1 text-sm font-medium" data-page="materials">
+                    <i class="fas fa-folder-open mr-2"></i>資料室
+                </button>
+                <button onclick="showPage('seminars')" class="nav-link text-blue-100 hover:text-white px-2 pb-1 text-sm font-medium" data-page="seminars">
+                    <i class="fas fa-calendar-alt mr-2"></i>セミナー
+                </button>
+                <button onclick="showPage('billing')" class="nav-link text-blue-100 hover:text-white px-2 pb-1 text-sm font-medium" data-page="billing">
+                    <i class="fas fa-receipt mr-2"></i>請求・お支払い
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+        
+        <!-- ホームページ -->
+        <div id="page-dashboard" class="page-content fade-in">
+            <div class="mb-6 mt-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">ホーム</h2>
+                <p class="text-secondary">契約企業向けポータルへようこそ</p>
+            </div>
+
+            <!-- 右上固定：危機管理官カード -->
+            <div class="fixed right-6 w-80 z-40" style="top: 140px;">
+                <div class="bg-white rounded-lg shadow-lg border-l-4 border-blue-500">
+                    <div class="flex items-center justify-between p-3 border-b border-gray-200">
+                        <h3 class="text-sm font-semibold text-gray-900">
+                            <i class="fas fa-shield-alt text-blue-500 mr-2"></i>
+                            専属危機管理官
+                        </h3>
+                        <button onclick="toggleCrisisManagerCard()" class="text-gray-400 hover:text-gray-600">
+                            <i id="crisis-manager-icon" class="fas fa-minus text-sm"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="crisis-manager-content" class="p-6 pt-3">
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-1">
+                                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span class="text-xs text-green-600 font-medium">待機中</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4 mb-4">
+                            <div class="w-16 h-20 flex-shrink-0 relative">
+                                <div class="w-16 h-20 bg-gray-300 rounded-lg border-2 border-blue-200 flex items-center justify-center">
+                                    <i class="fas fa-user text-gray-500 text-2xl"></i>
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
+                            </div>
+                            
+                            <div class="flex-1">
+                                <h4 class="font-bold text-gray-900 text-lg">高橋 公義</h4>
+                                <p class="text-sm text-blue-600 font-medium">危機管理官</p>
+                                <p class="text-xs text-gray-500">あなた専属の担当者</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 mb-4">
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-phone-alt w-4 text-blue-500 mr-2"></i>
+                                <span class="font-mono">090-1234-5678</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-envelope w-4 text-blue-500 mr-2"></i>
+                                <span class="text-xs">takahashi@smartpolice.co.jp</span>
+                            </div>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-clock w-4 text-blue-500 mr-2"></i>
+                                <span>対応時間: 24時間365日</span>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="callManager()" class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-green-700">
+                                <i class="fas fa-phone mr-1"></i>
+                                緊急電話
+                            </button>
+                            <button onclick="showPage('messages')" class="bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                                <i class="fas fa-comments mr-1"></i>
+                                相談開始
+                            </button>
+                        </div>
+                        
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <button onclick="viewManagerProfile()" class="w-full bg-gray-100 text-gray-700 px-3 py-2 rounded-lg text-xs hover:bg-gray-200">
+                                <i class="fas fa-id-card mr-1"></i>
+                                詳細プロフィールを見る
+                            </button>
+                        </div>
+
+                        <div class="mt-2 text-xs text-gray-500 text-center">
+                            最終対応: 2024年8月28日 16:45 | 対応実績: 1,250+件
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ダッシュボードカード -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8" style="margin-right: 340px;">
+                <!-- 現在の対応中 -->
+                <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-warning cursor-pointer hover:shadow-md">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-exclamation-circle text-warning mr-2"></i>
+                            現在の対応中
+                        </h3>
+                        <i class="fas fa-external-link-alt text-gray-400 text-sm"></i>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">未解決の相談</span>
+                            <span class="font-bold text-warning text-xl">2件</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">処理中の申請</span>
+                            <span class="font-bold text-info text-xl">1件</span>
+                        </div>
+                        <div class="text-xs text-gray-500 pt-2 border-t">
+                            最終更新: 2024年8月28日 15:30
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 最新のお知らせ -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-bullhorn text-info mr-2"></i>
+                            最新のお知らせ
+                        </h3>
+                        <button onclick="showPage('announcements')" class="text-sm text-primary hover:text-blue-700">すべて見る</button>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="border-l-4 border-danger pl-3">
+                            <h4 class="font-medium text-sm text-gray-900">緊急メンテナンスのお知らせ</h4>
+                            <p class="text-xs text-gray-600">2024/08/30 2:00-6:00にシステムメンテナンス...</p>
+                            <span class="text-xs text-danger">重要</span>
+                        </div>
+                        <div class="border-l-4 border-info pl-3">
+                            <h4 class="font-medium text-sm text-gray-900">新機能リリースのご案内</h4>
+                            <p class="text-xs text-gray-600">資料室に検索機能が追加されました...</p>
+                            <span class="text-xs text-info">お知らせ</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- よく使う操作 -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-star text-warning mr-2"></i>
+                        よく使う操作
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="showPage('messages')" class="bg-primary text-white p-3 rounded-lg text-center hover:bg-blue-700">
+                            <i class="fas fa-edit text-lg mb-2"></i>
+                            <div class="text-sm font-medium">相談を投稿</div>
+                        </button>
+                        <button onclick="showPage('services')" class="bg-danger text-white p-3 rounded-lg text-center hover:bg-red-700">
+                            <i class="fas fa-shield-alt text-lg mb-2"></i>
+                            <div class="text-sm font-medium">カスハラ出動</div>
+                        </button>
+                        <button onclick="showPage('services')" class="bg-success text-white p-3 rounded-lg text-center hover:bg-green-700">
+                            <i class="fas fa-certificate text-lg mb-2"></i>
+                            <div class="text-sm font-medium">セキュリティシール</div>
+                        </button>
+                        <button onclick="showPage('materials')" class="bg-secondary text-white p-3 rounded-lg text-center hover:bg-gray-600">
+                            <i class="fas fa-folder-open text-lg mb-2"></i>
+                            <div class="text-sm font-medium">資料室</div>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 請求情報 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" style="margin-right: 340px;">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                        <i class="fas fa-receipt text-warning mr-2"></i>
+                        次の請求予定
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">今月の月額料金</span>
+                            <span class="font-bold text-lg">¥50,000</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">オプション料金</span>
+                            <span class="font-bold text-lg">¥12,000</span>
+                        </div>
+                        <div class="border-t pt-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm font-medium text-gray-900">合計（税込）</span>
+                                <span class="font-bold text-xl text-primary">¥68,200</span>
+                            </div>
+                            <div class="text-xs text-gray-500 mt-1">
+                                支払期限: 2024年9月30日
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button onclick="showPage('billing')" class="bg-primary text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700">
+                            請求詳細を確認
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 相談・連絡ページ -->
+        <div id="page-messages" class="page-content hidden fade-in">
+            <div class="flex justify-between items-center mb-6 mt-6">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">相談・連絡</h2>
+                    <p class="text-secondary">お困りごとの相談や質問、報告などにご利用ください</p>
+                </div>
+                <button onclick="showNewMessageModal()" class="bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-edit mr-2"></i>
+                    新規相談
+                </button>
+            </div>
+
+            <!-- 相談一覧テーブル -->
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">件名</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">優先度</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">状態</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">担当</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">更新日</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="showMessageDetail(1)">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-paperclip text-gray-400 mr-2"></i>
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">顧客からの苦情対応について</div>
+                                        <div class="text-sm text-gray-500">顧客から商品に対する苦情が寄せられました...</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">高</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">対応中</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">山田コンサルタント</div>
+                                <div class="text-sm text-gray-500">リスク管理部</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                2024/08/28<br>
+                                <span class="text-xs">15:30</span>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-medium">
+                                <button class="text-primary hover:text-blue-700 mr-3" onclick="event.stopPropagation(); showMessageDetail(1)">
+                                    <i class="fas fa-eye mr-1"></i>詳細
+                                </button>
+                                <button class="text-success hover:text-green-700" onclick="event.stopPropagation(); replyMessage(1)">
+                                    <i class="fas fa-reply mr-1"></i>返信
+                                </button>
+                            </td>
+                        </tr>
+                        <tr class="hover:bg-gray-50 cursor-pointer" onclick="showMessageDetail(2)">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div>
+                                        <div class="text-sm font-medium text-gray-900">セキュリティ研修の件</div>
+                                        <div class="text-sm text-gray-500">来月予定している社員向けセキュリティ研修について...</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded-full">中</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">完了</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">佐藤マネージャー</div>
+                                <div class="text-sm text-gray-500">教育研修部</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                2024/08/27<br>
+                                <span class="text-xs">14:20</span>
+                            </td>
+                            <td class="px-6 py-4 text-sm font-medium">
+                                <button class="text-primary hover:text-blue-700 mr-3" onclick="event.stopPropagation(); showMessageDetail(2)">
+                                    <i class="fas fa-eye mr-1"></i>詳細
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 新規相談モーダル -->
+            <div id="new-message-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50">
+                <div class="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900">新規相談</h3>
+                        <button onclick="hideNewMessageModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <form id="new-message-form" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    件名 <span class="text-red-600">*</span>
+                                </label>
+                                <input type="text" name="subject" required 
+                                       class="w-full p-3 border border-gray-300 rounded-md" 
+                                       placeholder="相談内容の件名を入力してください">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    優先度 <span class="text-red-600">*</span>
+                                </label>
+                                <select name="priority" required class="w-full p-3 border border-gray-300 rounded-md">
+                                    <option value="">優先度を選択</option>
+                                    <option value="high">高（緊急対応必要）</option>
+                                    <option value="medium">中（通常対応）</option>
+                                    <option value="low">低（参考・報告）</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    カテゴリ <span class="text-red-600">*</span>
+                                </label>
+                                <select name="category" required class="w-full p-3 border border-gray-300 rounded-md">
+                                    <option value="">カテゴリを選択</option>
+                                    <option value="customer-harassment">カスハラ・迷惑行為</option>
+                                    <option value="security-incident">セキュリティインシデント</option>
+                                    <option value="consultation">一般的な相談</option>
+                                    <option value="training-request">研修・指導依頼</option>
+                                    <option value="other">その他</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                相談内容 <span class="text-red-600">*</span>
+                            </label>
+                            <textarea name="content" required rows="8" 
+                                      class="w-full p-3 border border-gray-300 rounded-md" 
+                                      placeholder="状況の詳細、発生日時、関係者、求める対応などを具体的にご記入ください"></textarea>
+                        </div>
+
+                        <div class="flex justify-end space-x-4 pt-6 border-t">
+                            <button type="button" onclick="hideNewMessageModal()" class="px-6 py-3 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                キャンセル
+                            </button>
+                            <button type="submit" class="px-6 py-3 bg-primary text-white rounded-md hover:bg-blue-700">
+                                <i class="fas fa-paper-plane mr-2"></i>
+                                相談を送信
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- サービス申請ページ -->
+        <div id="page-services" class="page-content hidden fade-in">
+            <div class="mb-6 mt-6">
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">申請（サービス）</h2>
+                <p class="text-secondary">各種セキュリティサービスをワンクリックで申込できます</p>
+            </div>
+
+            <!-- サービスカード一覧 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                
+                <!-- 1. カスハラ出動依頼 -->
+                <div class="bg-white rounded-lg shadow-sm hover:shadow-md p-6 border border-gray-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="bg-red-100 rounded-lg p-3">
+                            <i class="fas fa-shield-alt text-red-600 text-2xl"></i>
+                        </div>
+                        <span class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded-full">緊急対応</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">カスハラ出動依頼</h3>
+                    <p class="text-gray-600 text-sm mb-4">顧客からの迷惑行為・ハラスメントに対する専門スタッフの緊急派遣</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-clock mr-2 text-gray-400"></i>
+                            <span>30分以内に出動</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-yen-sign mr-2 text-gray-400"></i>
+                            <span>基本料金: 50,000円〜</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-phone mr-2 text-gray-400"></i>
+                            <span>24時間365日対応</span>
+                        </div>
+                    </div>
+                    <button class="w-full bg-red-600 text-white py-3 px-4 rounded-lg hover:bg-red-700" 
+                            onclick="openServiceApplication('customer-harassment')">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        緊急申込
+                    </button>
+                </div>
+
+                <!-- 2. セキュリティシール -->
+                <div class="bg-white rounded-lg shadow-sm hover:shadow-md p-6 border border-gray-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="bg-blue-100 rounded-lg p-3">
+                            <i class="fas fa-certificate text-blue-600 text-2xl"></i>
+                        </div>
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">セキュリティ</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">セキュリティシール</h3>
+                    <p class="text-gray-600 text-sm mb-4">防犯ステッカーやシールで視覚的な抑止効果を提供</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-truck mr-2 text-gray-400"></i>
+                            <span>3営業日以内発送</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-yen-sign mr-2 text-gray-400"></i>
+                            <span>基本料金: 5,000円〜</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-palette mr-2 text-gray-400"></i>
+                            <span>カスタムデザイン対応</span>
+                        </div>
+                    </div>
+                    <button class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700" 
+                            onclick="openServiceApplication('security-seal')">
+                        <i class="fas fa-shopping-cart mr-2"></i>
+                        注文する
+                    </button>
+                </div>
+
+                <!-- 3. セキュリティ研修 -->
+                <div class="bg-white rounded-lg shadow-sm hover:shadow-md p-6 border border-gray-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="bg-green-100 rounded-lg p-3">
+                            <i class="fas fa-graduation-cap text-green-600 text-2xl"></i>
+                        </div>
+                        <span class="bg-green-100 text-green-800 text-xs font-medium px-2 py-1 rounded-full">研修・教育</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">セキュリティ研修</h3>
+                    <p class="text-gray-600 text-sm mb-4">従業員向けの防犯・リスク管理研修プログラム</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-users mr-2 text-gray-400"></i>
+                            <span>1回最大50名まで</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-yen-sign mr-2 text-gray-400"></i>
+                            <span>基本料金: 80,000円〜</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-clock mr-2 text-gray-400"></i>
+                            <span>2-3時間のプログラム</span>
+                        </div>
+                    </div>
+                    <button class="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700" 
+                            onclick="openServiceApplication('security-training')">
+                        <i class="fas fa-calendar-plus mr-2"></i>
+                        研修予約
+                    </button>
+                </div>
+
+                <!-- 4. リスク診断 -->
+                <div class="bg-white rounded-lg shadow-sm hover:shadow-md p-6 border border-gray-200">
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="bg-purple-100 rounded-lg p-3">
+                            <i class="fas fa-search text-purple-600 text-2xl"></i>
+                        </div>
+                        <span class="bg-purple-100 text-purple-800 text-xs font-medium px-2 py-1 rounded-full">コンサルティング</span>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">リスク診断</h3>
+                    <p class="text-gray-600 text-sm mb-4">現状のセキュリティリスクを専門家が詳細に分析・診断</p>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-file-alt mr-2 text-gray-400"></i>
+                            <span>詳細レポート付き</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-yen-sign mr-2 text-gray-400"></i>
+                            <span>基本料金: 120,000円〜</span>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-600">
+                            <i class="fas fa-calendar mr-2 text-gray-400"></i>
+                            <span>1週間で完了</span>
+                        </div>
+                    </div>
+                    <button class="w-full bg-purple-600 text-white py-3 px-4 rounded-lg hover:bg-purple-700" 
+                            onclick="openServiceApplication('risk-assessment')">
+                        <i class="fas fa-chart-line mr-2"></i>
+                        診断依頼
+                    </button>
+                </div>
+            </div>
+
+            <!-- サービス申請モーダル -->
+            <div id="service-application-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 h-full w-full hidden z-50">
+                <div class="relative top-20 mx-auto p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 id="service-modal-title" class="text-2xl font-bold text-gray-900">サービス申請</h3>
+                        <button onclick="hideServiceModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <form id="service-application-form" class="space-y-6">
+                        <input type="hidden" id="service-type" name="serviceType">
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    希望開始日 <span class="text-red-600">*</span>
+                                </label>
+                                <input type="date" name="startDate" required 
+                                       class="w-full p-3 border border-gray-300 rounded-md">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    緊急度 <span class="text-red-600">*</span>
+                                </label>
+                                <select name="urgency" required class="w-full p-3 border border-gray-300 rounded-md">
+                                    <option value="">緊急度を選択</option>
+                                    <option value="immediate">即時対応必要</option>
+                                    <option value="urgent">緊急（24時間以内）</option>
+                                    <option value="normal">通常（3営業日以内）</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                詳細要件 <span class="text-red-600">*</span>
+                            </label>
+                            <textarea name="details" required rows="6" 
+                                      class="w-full p-3 border border-gray-300 rounded-md" 
+                                      placeholder="具体的な要件や期待する成果物について詳しくご記入ください"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    担当者名 <span class="text-red-600">*</span>
+                                </label>
+                                <input type="text" name="contactPerson" required 
+                                       class="w-full p-3 border border-gray-300 rounded-md" 
+                                       placeholder="担当者名">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    連絡先電話番号 <span class="text-red-600">*</span>
+                                </label>
+                                <input type="tel" name="contactPhone" required 
+                                       class="w-full p-3 border border-gray-300 rounded-md" 
+                                       placeholder="090-1234-5678">
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-4 pt-6 border-t">
+                            <button type="button" onclick="hideServiceModal()" class="px-6 py-3 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                                キャンセル
+                            </button>
+                            <button type="submit" class="px-6 py-3 bg-primary text-white rounded-md hover:bg-blue-700">
+                                <i class="fas fa-paper-plane mr-2"></i>
+                                申請提出
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- その他のページ（プレースホルダー） -->
+        <div id="page-announcements" class="page-content hidden fade-in">
+            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-bullhorn text-blue-500 mr-2"></i>お知らせ
+                </h2>
+                <p class="text-gray-600">お知らせページは準備中です。</p>
+            </div>
+        </div>
+
+        <div id="page-materials" class="page-content hidden fade-in">
+            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-folder-open text-blue-500 mr-2"></i>資料室
+                </h2>
+                <p class="text-gray-600">資料室ページは準備中です。</p>
+            </div>
+        </div>
+
+        <div id="page-seminars" class="page-content hidden fade-in">
+            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-calendar-alt text-blue-500 mr-2"></i>セミナー
+                </h2>
+                <p class="text-gray-600">セミナーページは準備中です。</p>
+            </div>
+        </div>
+
+        <div id="page-billing" class="page-content hidden fade-in">
+            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-receipt text-blue-500 mr-2"></i>請求・お支払い
+                </h2>
+                <p class="text-gray-600">請求・お支払いページは準備中です。</p>
+            </div>
+        </div>
+
+        <div id="page-company" class="page-content hidden fade-in">
+            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-building text-blue-500 mr-2"></i>自社情報
+                </h2>
+                <p class="text-gray-600">自社情報ページは準備中です。</p>
+            </div>
+        </div>
+
+        <div id="page-settings" class="page-content hidden fade-in">
+            <div class="bg-white rounded-lg shadow-sm p-6 mt-6">
+                <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-cog text-blue-500 mr-2"></i>設定
+                </h2>
+                <p class="text-gray-600">設定ページは準備中です。</p>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // ========================================
+        // 🎯 ページ切り替え機能
+        // ========================================
+
+        function showPage(pageId) {
+            console.log('ページ切り替え:', pageId);
+            
+            // すべてのページを非表示
+            document.querySelectorAll('.page-content').forEach(page => {
+                page.classList.add('hidden');
+            });
+            
+            // 指定されたページを表示
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) {
+                targetPage.classList.remove('hidden');
+            }
+
+            // ナビゲーション状態を更新
+            updateNavigationActive(pageId);
+            window.scrollTo(0, 0);
+        }
+
+        function updateNavigationActive(pageId) {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                if (link.dataset.page === pageId) {
+                    link.classList.add('text-white', 'border-white');
+                    link.classList.remove('text-blue-100');
+                } else {
+                    link.classList.remove('text-white', 'border-white');
+                    link.classList.add('text-blue-100');
+                }
+            });
+        }
+
+        // ========================================
+        // 🔧 UI機能
+        // ========================================
+
+        function toggleUserDropdown() {
+            const dropdown = document.getElementById('user-dropdown-menu');
+            if (dropdown) {
+                dropdown.classList.toggle('hidden');
+            }
+        }
+
+        function toggleCrisisManagerCard() {
+            const content = document.getElementById('crisis-manager-content');
+            const icon = document.getElementById('crisis-manager-icon');
+            
+            if (content && icon) {
+                const isVisible = content.style.display !== 'none';
+                
+                if (isVisible) {
+                    content.style.display = 'none';
+                    icon.className = 'fas fa-plus text-sm';
+                } else {
+                    content.style.display = 'block';
+                    icon.className = 'fas fa-minus text-sm';
+                }
+            }
+        }
+
+        function callManager() {
+            if (confirm('緊急電話をかけますか？\n\n高橋危機管理官（090-1234-5678）に直接連絡します。')) {
+                window.open('tel:090-1234-5678');
+            }
+        }
+
+        function viewManagerProfile() {
+            alert('【高橋公義 危機管理官 詳細プロフィール】\n\n' +
+                  '・専門分野：企業危機管理、カスタマーハラスメント対応\n' +
+                  '・経歴：警察官20年、企業コンサル5年\n' +
+                  '・資格：危機管理士、産業カウンセラー\n' +
+                  '・対応実績：1,250+件（満足度98%）\n' +
+                  '・言語：日本語、英語\n' +
+                  '・対応時間：24時間365日\n\n' +
+                  '※緊急時は遠慮なくご連絡ください');
+        }
+
+        // ========================================
+        // 🎯 相談・連絡機能
+        // ========================================
+
+        function showNewMessageModal() {
+            document.getElementById('new-message-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function hideNewMessageModal() {
+            document.getElementById('new-message-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('new-message-form').reset();
+        }
+
+        function showMessageDetail(messageId) {
+            alert('相談詳細を表示します。\n\n相談ID: ' + messageId + '\n\n実際の運用では、詳細情報がモーダルで表示されます。');
+        }
+
+        function replyMessage(messageId) {
+            alert('返信機能: 相談ID ' + messageId + ' への返信画面を開きます。');
+        }
+
+        // ========================================
+        // 🎯 サービス申請機能
+        // ========================================
+
+        const serviceInfo = {
+            'customer-harassment': {
+                title: 'カスハラ出動依頼申請',
+                description: '顧客からの迷惑行為・ハラスメントに対する専門スタッフの緊急派遣を申請します。'
+            },
+            'security-seal': {
+                title: 'セキュリティシール申請',
+                description: '防犯ステッカーやシールの注文を申請します。'
+            },
+            'security-training': {
+                title: 'セキュリティ研修申請',
+                description: '従業員向けの防犯・リスク管理研修の開催を申請します。'
+            },
+            'risk-assessment': {
+                title: 'リスク診断申請',
+                description: '現状のセキュリティリスクの詳細分析・診断を申請します。'
+            }
+        };
+
+        function openServiceApplication(serviceType) {
+            const info = serviceInfo[serviceType];
+            if (info) {
+                document.getElementById('service-modal-title').textContent = info.title;
+                document.getElementById('service-type').value = serviceType;
+                
+                // 今日の日付を設定
+                const today = new Date().toISOString().split('T')[0];
+                const dateInput = document.querySelector('input[name="startDate"]');
+                if (dateInput) {
+                    dateInput.value = today;
+                }
+                
+                document.getElementById('service-application-modal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function hideServiceModal() {
+            document.getElementById('service-application-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('service-application-form').reset();
+        }
+
+        // ========================================
+        // 🎯 初期化処理
+        // ========================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 スマートポリス ポータル 初期化開始');
+
+            // 外側クリックでドロップダウンを閉じる
+            document.addEventListener('click', function(e) {
+                const dropdown = document.getElementById('user-dropdown-menu');
+                const toggle = document.querySelector('[onclick="toggleUserDropdown()"]');
+                
+                if (dropdown && toggle && !toggle.contains(e.target) && !dropdown.contains(e.target)) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+
+            // フォーム送信処理
+            document.getElementById('new-message-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const messageData = {
+                    subject: formData.get('subject'),
+                    priority: formData.get('priority'),
+                    category: formData.get('category'),
+                    content: formData.get('content')
+                };
+
+                console.log('新規相談データ:', messageData);
+                alert('相談を送信しました。担当者より24時間以内にご連絡いたします。');
+                hideNewMessageModal();
+            });
+
+            document.getElementById('service-application-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(e.target);
+                const serviceData = {
+                    serviceType: formData.get('serviceType'),
+                    startDate: formData.get('startDate'),
+                    urgency: formData.get('urgency'),
+                    details: formData.get('details'),
+                    contactPerson: formData.get('contactPerson'),
+                    contactPhone: formData.get('contactPhone')
+                };
+
+                console.log('サービス申請データ:', serviceData);
+                alert('サービス申請を提出しました。担当者より2営業日以内にご連絡いたします。');
+                hideServiceModal();
+            });
+
+            // 初期ページ表示
+            showPage('dashboard');
+            
+            console.log('✅ スマートポリス ポータル 初期化完了');
+        });
+    </script>
 </body>
 </html>
